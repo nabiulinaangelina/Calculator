@@ -1,9 +1,17 @@
 #include "AppCalculator.hpp"
 #include "Menu.hpp"
 #include "Standard.hpp"
+#include "Calculator.hpp"
+#include "data_structures/MyStack.hpp"
+#include "commands/arithmetic/AddCommand.hpp"
+#include "commands/arithmetic/SubtractCommand.hpp"
+#include "commands/arithmetic/SqrtCommand.hpp"
 #include <spdlog/spdlog.h>
 #include <iostream>
 #include <string>
+#include <iomanip>
+#include <sstream>
+
 // инициализация статического указателя
 AppCalculator *AppCalculator::instance = nullptr;
 // приватный ctor
@@ -53,8 +61,152 @@ void AppCalculator::demoStandardOperations() {
     std::cout << "Сейчас доступна только демонстрация базовых операций.\n";
     demoBasicArithmetic();
 }
+
+void AppCalculator::demoCalculatorWithCommands() {
+    std::cout << "\n=== Демонстрация паттерна Command ===\n\n";
+    
+    Calculator* calc = Calculator::getInstance();
+    
+    std::cout << "Доступные команды: ";
+    auto commands = calc->getAvailableCommands();
+    for (const auto& cmd : commands) {
+        std::cout << cmd << " ";
+    }
+    std::cout << "\n\n";
+    
+    // Демонстрация выполнения команд
+    try {
+        std::cout << "1. Сложение: 10 + 5 = ";
+        double result1 = calc->executeCommand("add", {10, 5});
+        std::cout << result1 << "\n";
+        
+        std::cout << "2. Вычитание: 10 - 5 = ";
+        double result2 = calc->executeCommand("subtract", {10, 5});
+        std::cout << result2 << "\n";
+        
+        std::cout << "3. Квадратный корень: sqrt(25) = ";
+        double result3 = calc->executeCommand("sqrt", {25});
+        std::cout << result3 << "\n";
+        
+        std::cout << "\nТекущий результат: " << calc->getCurrentResult() << "\n";
+        
+        // Демонстрация стека
+        std::cout << "\n=== Демонстрация собственного стека ===\n";
+        MyStack<double> stack;
+        
+        stack.push(1.5);
+        stack.push(2.7);
+        stack.push(3.9);
+        
+        std::cout << "Размер стека: " << stack.size() << "\n";
+        std::cout << "Верхний элемент: " << stack.peek() << "\n";
+        
+        std::cout << "Извлечение элементов: ";
+        while (!stack.isEmpty()) {
+            std::cout << stack.pop() << " ";
+        }
+        std::cout << "\n";
+        
+    } catch (const std::exception& e) {
+        std::cout << "Ошибка: " << e.what() << "\n";
+    }
+}
+
 // Методы меню (заглушки - будут реализованы позже)
-void AppCalculator::showStandardCalculator() { demoStandardOperations(); }
+void AppCalculator::showStandardCalculator() {
+    Menu calcMenu("Стандартный калькулятор");
+    
+    // Создаем экземпляр калькулятора
+    Calculator* calc = Calculator::getInstance();
+    
+    // Переменные для хранения ввода
+    double num1 = 0, num2 = 0;
+    
+    calcMenu.addItem("Сложение", [&calc, &num1, &num2]() {
+        std::cout << "\nВведите два числа:\n";
+        std::cout << "Первое число: ";
+        std::cin >> num1;
+        std::cout << "Второе число: ";
+        std::cin >> num2;
+        
+        try {
+            double result = calc->executeCommand("add", {num1, num2});
+            std::cout << num1 << " + " << num2 << " = " << result << "\n";
+        } catch (const std::exception& e) {
+            std::cout << "Ошибка: " << e.what() << "\n";
+        }
+    });
+    
+    calcMenu.addItem("Вычитание", [&calc, &num1, &num2]() {
+        std::cout << "\nВведите два числа:\n";
+        std::cout << "Первое число: ";
+        std::cin >> num1;
+        std::cout << "Второе число: ";
+        std::cin >> num2;
+        
+        try {
+            double result = calc->executeCommand("subtract", {num1, num2});
+            std::cout << num1 << " - " << num2 << " = " << result << "\n";
+        } catch (const std::exception& e) {
+            std::cout << "Ошибка: " << e.what() << "\n";
+        }
+    });
+    
+    calcMenu.addItem("Квадратный корень", [&calc, &num1]() {
+        std::cout << "\nВведите число: ";
+        std::cin >> num1;
+        
+        try {
+            double result = calc->executeCommand("sqrt", {num1});
+            std::cout << "sqrt(" << num1 << ") = " << result << "\n";
+        } catch (const std::exception& e) {
+            std::cout << "Ошибка: " << e.what() << "\n";
+        }
+    });
+    
+    calcMenu.addItem("Отменить (Undo)", [&calc]() {
+        if (calc->undo()) {
+            std::cout << "Команда отменена\n";
+            std::cout << "Текущий результат: " << calc->getCurrentResult() << "\n";
+        } else {
+            std::cout << "Нечего отменять\n";
+        }
+    });
+    
+    calcMenu.addItem("Повторить (Redo)", [&calc]() {
+        if (calc->redo()) {
+            std::cout << "Команда повторена\n";
+            std::cout << "Текущий результат: " << calc->getCurrentResult() << "\n";
+        } else {
+            std::cout << "Нечего повторять\n";
+        }
+    });
+    
+    calcMenu.addItem("Показать историю", [&calc]() {
+        auto history = calc->getHistory();
+        if (history.empty()) {
+            std::cout << "История пуста\n";
+        } else {
+            std::cout << "\n=== История операций ===\n";
+            for (size_t i = 0; i < history.size(); ++i) {
+                std::cout << i + 1 << ". " << history[i]->toString() << "\n";
+            }
+        }
+    });
+    
+    calcMenu.addItem("Очистить историю", [&calc]() {
+        calc->clearHistory();
+        std::cout << "История очищена\n";
+    });
+    
+    calcMenu.addItem("Демо паттерна Command", [this]() {
+        this->demoCalculatorWithCommands();
+    });
+    
+    calcMenu.run();
+}
+
+
 void AppCalculator::showScientificCalculator() { 
     std::cout << "\n=== Инженерный калькулятор ===\n\n";
     std::cout << "Эта функциональность будет реализована на 3 этапе.\n";

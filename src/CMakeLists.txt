@@ -5,6 +5,7 @@ add_executable(app_calculator
     main.cpp
     AppCalculator.cpp #  App здесь, в приложении!
     Menu.cpp
+    Calculator.cpp
 )
 
 # ============================================
