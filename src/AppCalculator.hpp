@@ -1,18 +1,33 @@
-//#include <iostream>
+#ifndef APPCALCULATOR_HPP
+#define APPCALCULATOR_HPP
+
 #include <string>
 #include <vector>
-//#include "Menu.h" // предполагаем, что класс Menu вынесен в отдельный файл
 
 class AppCalculator
 {
 private:
     static AppCalculator *instance; // статический указатель на единственный объект
 
+    // Приватные методы для меню
+    void showStandardCalculator();
+    void showScientificCalculator();
+    void showProgrammerCalculator();
+    void showExpressionEvaluation();
+    void showNumberOperations();
+    void showStringOperations();
+    void showDateOperations();
+    void showSortingOperations();
+    void showHistory();
+
+    // Демо-функции для тестирования
+    void demoStandardOperations();
+    void demoBasicArithmetic();
+    
     // приватный ctor
     AppCalculator();
 
 public:
-
     // запрет копирования и присваивания
     AppCalculator(const AppCalculator &) = delete;
     AppCalculator &operator=(const AppCalculator &) = delete;
@@ -24,5 +39,6 @@ public:
 
     // метод run — принимает аргументы командной строки
     void run(int argc, char *argv[]);
-  
 };
+
+#endif // APPCALCULATOR_HPP

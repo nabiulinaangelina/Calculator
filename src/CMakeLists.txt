@@ -4,6 +4,7 @@
 add_executable(app_calculator
     main.cpp
     AppCalculator.cpp #  App здесь, в приложении!
+    Menu.cpp
 )
 
 # ============================================
@@ -46,7 +47,7 @@ target_link_libraries(app_calculator
 target_include_directories(app_calculator
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}  # Для AppCalculator.hpp
-
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
 
 

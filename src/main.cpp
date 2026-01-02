@@ -1,6 +1,7 @@
 #include "AppCalculator.hpp"
-int main(){
+#include <iostream>
 
-    AppCalculator::getInstance()->run(0, nullptr);
+    int main(int argc, char* argv[]){
+    AppCalculator::getInstance()->run(argc, argv);
     return 0;
 }
