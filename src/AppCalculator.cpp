@@ -6,6 +6,13 @@
 #include "commands/arithmetic/AddCommand.hpp"
 #include "commands/arithmetic/SubtractCommand.hpp"
 #include "commands/arithmetic/SqrtCommand.hpp"
+#include "utils/NumberConverter.hpp"
+#include "commands/programmer/BitwiseAndCommand.hpp"
+#include "commands/programmer/BitwiseOrCommand.hpp"
+#include "commands/programmer/BitwiseXorCommand.hpp"
+#include "commands/programmer/BitwiseNotCommand.hpp"
+#include "commands/programmer/ShiftLeftCommand.hpp"
+#include "commands/programmer/ShiftRightCommand.hpp"
 #include <spdlog/spdlog.h>
 #include <iostream>
 #include <string>
@@ -381,11 +388,322 @@ void AppCalculator::demoScientificFunctions() {
     std::cout << "\n=== Демонстрация завершена ===\n";
 }
 
-
-void AppCalculator::showProgrammerCalculator() { 
-    std::cout << "\n=== Калькулятор программиста ===\n\n";
-    std::cout << "Эта функциональность будет реализована на 4 этапе.\n";
+void AppCalculator::showProgrammerCalculator() {
+    Menu progMenu("Калькулятор программиста");
+    
+    Calculator* calc = Calculator::getInstance();
+    
+    // Переменные для хранения ввода
+    std::string input1, input2;
+    int num1 = 0, num2 = 0;
+    int bits = 32; // Количество битов для отображения
+    
+    // Функция для парсинга ввода
+    auto parseInput = [](const std::string& input) -> int {
+        try {
+            return NumberConverter::parseNumber(input);
+        } catch (const std::exception& e) {
+            std::cout << "Ошибка парсинга: " << e.what() << "\n";
+            return 0;
+        }
+    };
+    
+    // Функция для отображения числа во всех системах
+    auto displayNumber = [bits](int number, const std::string& label = "Результат") {
+        std::cout << "\n=== " << label << " ===\n";
+        std::cout << NumberConverter::formatNumber(number, bits) << "\n";
+        
+        // Дополнительная информация
+        std::cout << "\nДополнительно:\n";
+        std::cout << "  Дополнительный код: " 
+                  << NumberConverter::decimalToBinary(number, bits) << "\n";
+        std::cout << "  Без знака: " 
+                  << static_cast<unsigned int>(number) << "\n";
+        
+        if (number < 0) {
+            std::cout << "  Абсолютное значение: " << std::abs(number) << "\n";
+        }
+    };
+    
+    progMenu.addItem("Побитовое И (AND)", [&calc, &input1, &input2, &parseInput, &displayNumber]() {
+        std::cout << "\nВведите первое число (dec, bin, hex): ";
+        std::getline(std::cin >> std::ws, input1);
+        std::cout << "Введите второе число (dec, bin, hex): ";
+        std::getline(std::cin >> std::ws, input2);
+        
+        int num1 = parseInput(input1);
+        int num2 = parseInput(input2);
+        
+        if (num1 == 0 && num2 == 0 && (input1 != "0" || input2 != "0")) {
+            return; // Была ошибка парсинга
+        }
+        
+        try {
+            std::cout << "\n=== Побитовое И ===\n";
+            std::cout << NumberConverter::formatNumber(num1) << "\n";
+            std::cout << "AND\n";
+            std::cout << NumberConverter::formatNumber(num2) << "\n";
+            std::cout << "================\n";
+            
+            double result = calc->executeCommand("bit_and", {static_cast<double>(num1), 
+                                                           static_cast<double>(num2)});
+            displayNumber(static_cast<int>(result));
+            
+            // Показываем бинарное представление
+            BitwiseAndCommand andCmd(num1, num2);
+            andCmd.execute();
+            std::cout << "\nБинарное представление:\n";
+            std::cout << andCmd.toBinaryString() << "\n";
+            
+        } catch (const std::exception& e) {
+            std::cout << "Ошибка: " << e.what() << "\n";
+        }
+    });
+    
+    progMenu.addItem("Побитовое ИЛИ (OR)", [&calc, &input1, &input2, &parseInput, &displayNumber]() {
+        std::cout << "\nВведите первое число (dec, bin, hex): ";
+        std::getline(std::cin >> std::ws, input1);
+        std::cout << "Введите второе число (dec, bin, hex): ";
+        std::getline(std::cin >> std::ws, input2);
+        
+        int num1 = parseInput(input1);
+        int num2 = parseInput(input2);
+        
+        if (num1 == 0 && num2 == 0 && (input1 != "0" || input2 != "0")) {
+            return;
+        }
+        
+        try {
+            double result = calc->executeCommand("bit_or", {static_cast<double>(num1), 
+                                                          static_cast<double>(num2)});
+            displayNumber(static_cast<int>(result), "Побитовое ИЛИ");
+            
+            BitwiseOrCommand orCmd(num1, num2);
+            orCmd.execute();
+            std::cout << "\nБинарное представление:\n";
+            std::cout << orCmd.toBinaryString() << "\n";
+            
+        } catch (const std::exception& e) {
+            std::cout << "Ошибка: " << e.what() << "\n";
+        }
+    });
+    
+    progMenu.addItem("Побитовое исключающее ИЛИ (XOR)", [&calc, &input1, &input2, &parseInput, &displayNumber]() {
+        std::cout << "\nВведите первое число (dec, bin, hex): ";
+        std::getline(std::cin >> std::ws, input1);
+        std::cout << "Введите второе число (dec, bin, hex): ";
+        std::getline(std::cin >> std::ws, input2);
+        
+        int num1 = parseInput(input1);
+        int num2 = parseInput(input2);
+        
+        if (num1 == 0 && num2 == 0 && (input1 != "0" || input2 != "0")) {
+            return;
+        }
+        
+        try {
+            double result = calc->executeCommand("bit_xor", {static_cast<double>(num1), 
+                                                           static_cast<double>(num2)});
+            displayNumber(static_cast<int>(result), "Побитовое XOR");
+            
+            BitwiseXorCommand xorCmd(num1, num2);
+            xorCmd.execute();
+            std::cout << "\nБинарное представление:\n";
+            std::cout << xorCmd.toBinaryString() << "\n";
+            
+        } catch (const std::exception& e) {
+            std::cout << "Ошибка: " << e.what() << "\n";
+        }
+    });
+    
+    progMenu.addItem("Побитовое НЕ (NOT)", [&calc, &input1, &parseInput, &displayNumber]() {
+        std::cout << "\nВведите число (dec, bin, hex): ";
+        std::getline(std::cin >> std::ws, input1);
+        
+        int num1 = parseInput(input1);
+        
+        if (num1 == 0 && input1 != "0") {
+            return;
+        }
+        
+        try {
+            double result = calc->executeCommand("bit_not", {static_cast<double>(num1)});
+            displayNumber(static_cast<int>(result), "Побитовое НЕ");
+            
+            BitwiseNotCommand notCmd(num1);
+            notCmd.execute();
+            std::cout << "\nБинарное представление:\n";
+            std::cout << notCmd.toBinaryString() << "\n";
+            
+        } catch (const std::exception& e) {
+            std::cout << "Ошибка: " << e.what() << "\n";
+        }
+    });
+    
+    progMenu.addItem("Сдвиг влево (<<)", [&calc, &input1, &input2, &parseInput, &displayNumber]() {
+        std::cout << "\nВведите число для сдвига (dec, bin, hex): ";
+        std::getline(std::cin >> std::ws, input1);
+        std::cout << "Введите количество битов для сдвига: ";
+        std::getline(std::cin >> std::ws, input2);
+        
+        int num1 = parseInput(input1);
+        int shift = parseInput(input2);
+        
+        if ((num1 == 0 && input1 != "0") || (shift == 0 && input2 != "0")) {
+            return;
+        }
+        
+        try {
+            double result = calc->executeCommand("shift_left", {static_cast<double>(num1), 
+                                                              static_cast<double>(shift)});
+            displayNumber(static_cast<int>(result), "Сдвиг влево");
+            
+            ShiftLeftCommand shiftCmd(num1, shift);
+            shiftCmd.execute();
+            std::cout << "\nБинарное представление:\n";
+            std::cout << shiftCmd.toBinaryString() << "\n";
+            
+        } catch (const std::exception& e) {
+            std::cout << "Ошибка: " << e.what() << "\n";
+        }
+    });
+    
+    progMenu.addItem("Сдвиг вправо (>>)", [&calc, &input1, &input2, &parseInput, &displayNumber]() {
+        std::cout << "\nВведите число для сдвига (dec, bin, hex): ";
+        std::getline(std::cin >> std::ws, input1);
+        std::cout << "Введите количество битов для сдвига: ";
+        std::getline(std::cin >> std::ws, input2);
+        
+        int num1 = parseInput(input1);
+        int shift = parseInput(input2);
+        
+        if ((num1 == 0 && input1 != "0") || (shift == 0 && input2 != "0")) {
+            return;
+        }
+        
+        try {
+            double result = calc->executeCommand("shift_right", {static_cast<double>(num1), 
+                                                               static_cast<double>(shift)});
+            displayNumber(static_cast<int>(result), "Сдвиг вправо");
+            
+            ShiftRightCommand shiftCmd(num1, shift);
+            shiftCmd.execute();
+            std::cout << "\nБинарное представление:\n";
+            std::cout << shiftCmd.toBinaryString() << "\n";
+            
+        } catch (const std::exception& e) {
+            std::cout << "Ошибка: " << e.what() << "\n";
+        }
+    });
+    
+    progMenu.addItem("Конвертер систем счисления", [&input1, &bits]() {
+        std::cout << "\nВведите число (dec, bin, hex): ";
+        std::getline(std::cin >> std::ws, input1);
+        
+        try {
+            int number = NumberConverter::parseNumber(input1);
+            std::cout << "\n=== Конвертация ===\n";
+            std::cout << NumberConverter::formatNumber(number, bits) << "\n";
+            
+            // Показываем разные форматы
+            std::cout << "\nДругие форматы:\n";
+            std::cout << "  8-бит:  " << NumberConverter::decimalToBinary(number, 8) << "\n";
+            std::cout << "  16-бит: " << NumberConverter::decimalToBinary(number, 16) << "\n";
+            std::cout << "  32-бит: " << NumberConverter::decimalToBinary(number, 32) << "\n";
+            std::cout << "  64-бит: " << NumberConverter::decimalToBinary(number, 64) << "\n";
+            
+        } catch (const std::exception& e) {
+            std::cout << "Ошибка: " << e.what() << "\n";
+        }
+    });
+    
+    progMenu.addItem("Изменить разрядность (биты)", [&bits]() {
+        std::cout << "\nТекущая разрядность: " << bits << " бит\n";
+        std::cout << "Новая разрядность (8, 16, 32, 64): ";
+        int newBits;
+        std::cin >> newBits;
+        
+        if (newBits == 8 || newBits == 16 || newBits == 32 || newBits == 64) {
+            bits = newBits;
+            std::cout << "Разрядность изменена на " << bits << " бит\n";
+        } else {
+            std::cout << "Неподдерживаемая разрядность\n";
+        }
+    });
+    
+    progMenu.addItem("Демо программистских функций", [this]() {
+        this->demoProgrammerFunctions();
+    });
+    
+    progMenu.run();
 }
+
+// Добавляем демо-функцию в класс AppCalculator
+void AppCalculator::demoProgrammerFunctions() {
+    std::cout << "\n=== Демонстрация программистских функций ===\n\n";
+    
+    Calculator* calc = Calculator::getInstance();
+    calc->clearHistory();
+    
+    std::cout << "1. Базовые битовые операции:\n";
+    
+    // AND
+    int a = 0b1100; // 12
+    int b = 0b1010; // 10
+    double andResult = calc->executeCommand("bit_and", {static_cast<double>(a), 
+                                                      static_cast<double>(b)});
+    std::cout << "   " << a << " AND " << b << " = " << static_cast<int>(andResult) 
+              << " (binary: " << NumberConverter::decimalToBinary(static_cast<int>(andResult), 4) 
+              << ")\n";
+    
+    // OR
+    double orResult = calc->executeCommand("bit_or", {static_cast<double>(a), 
+                                                    static_cast<double>(b)});
+    std::cout << "   " << a << " OR " << b << " = " << static_cast<int>(orResult) 
+              << " (binary: " << NumberConverter::decimalToBinary(static_cast<int>(orResult), 4) 
+              << ")\n";
+    
+    // XOR
+    double xorResult = calc->executeCommand("bit_xor", {static_cast<double>(a), 
+                                                      static_cast<double>(b)});
+    std::cout << "   " << a << " XOR " << b << " = " << static_cast<int>(xorResult) 
+              << " (binary: " << NumberConverter::decimalToBinary(static_cast<int>(xorResult), 4) 
+              << ")\n";
+    
+    // NOT
+    double notResult = calc->executeCommand("bit_not", {static_cast<double>(a)});
+    std::cout << "   NOT " << a << " = " << static_cast<int>(notResult) << "\n";
+    
+    std::cout << "\n2. Сдвиги:\n";
+    
+    // Left shift
+    int value = 0b0001; // 1
+    int shift = 3;
+    double shiftLeftResult = calc->executeCommand("shift_left", {static_cast<double>(value), 
+                                                               static_cast<double>(shift)});
+    std::cout << "   " << value << " << " << shift << " = " << static_cast<int>(shiftLeftResult) 
+              << " (binary: " << NumberConverter::decimalToBinary(static_cast<int>(shiftLeftResult), 8) 
+              << ")\n";
+    
+    // Right shift
+    value = 0b1000; // 8
+    shift = 2;
+    double shiftRightResult = calc->executeCommand("shift_right", {static_cast<double>(value), 
+                                                                static_cast<double>(shift)});
+    std::cout << "   " << value << " >> " << shift << " = " << static_cast<int>(shiftRightResult) 
+              << " (binary: " << NumberConverter::decimalToBinary(static_cast<int>(shiftRightResult), 8) 
+              << ")\n";
+    
+    std::cout << "\n3. Конвертация систем счисления:\n";
+    
+    int testNumber = 255;
+    std::cout << "   Десятичное: " << testNumber << "\n";
+    std::cout << "   Двоичное:   " << NumberConverter::decimalToBinary(testNumber, 8) << "\n";
+    std::cout << "   Шестнадцатеричное: " << NumberConverter::decimalToHex(testNumber) << "\n";
+    
+    std::cout << "\n=== Демонстрация завершена ===\n";
+}
+
 void AppCalculator::showExpressionEvaluation() { 
     std::cout << "\n=== Вычисление выражений ===\n\n";
     std::cout << "Эта функциональность будет реализована на 5 этапе.\n";

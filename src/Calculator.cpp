@@ -8,6 +8,13 @@
 #include "commands/scientific/PowCommand.hpp"
 #include "commands/scientific/LogCommand.hpp"
 #include "commands/scientific/ExpCommand.hpp"
+#include "commands/programmer/BitwiseAndCommand.hpp"
+#include "commands/programmer/BitwiseOrCommand.hpp"
+#include "commands/programmer/BitwiseXorCommand.hpp"
+#include "commands/programmer/BitwiseNotCommand.hpp"
+#include "commands/programmer/ShiftLeftCommand.hpp"
+#include "commands/programmer/ShiftRightCommand.hpp"
+#include "utils/NumberConverter.hpp"
 #include <spdlog/spdlog.h>
 #include <stdexcept>
 #include <functional>
@@ -69,7 +76,32 @@ void Calculator::initializeCommandRegistry() {
     commandRegistry["exp"] = []() -> std::shared_ptr<Command> {
         return std::make_shared<ExpCommand>(0);
     };
+
+    // Программистские команды
+    commandRegistry["bit_and"] = []() -> std::shared_ptr<Command> {
+        return std::make_shared<BitwiseAndCommand>(0, 0);
+    };
     
+    commandRegistry["bit_or"] = []() -> std::shared_ptr<Command> {
+        return std::make_shared<BitwiseOrCommand>(0, 0);
+    };
+    
+    commandRegistry["bit_xor"] = []() -> std::shared_ptr<Command> {
+        return std::make_shared<BitwiseXorCommand>(0, 0);
+    };
+    
+    commandRegistry["bit_not"] = []() -> std::shared_ptr<Command> {
+        return std::make_shared<BitwiseNotCommand>(0);
+    };
+    
+    commandRegistry["shift_left"] = []() -> std::shared_ptr<Command> {
+        return std::make_shared<ShiftLeftCommand>(0, 0);
+    };
+    
+    commandRegistry["shift_right"] = []() -> std::shared_ptr<Command> {
+        return std::make_shared<ShiftRightCommand>(0, 0);
+    };
+
     spdlog::debug("Command registry initialized with {} commands", commandRegistry.size());
 }
 
@@ -82,6 +114,7 @@ double Calculator::executeCommand(std::shared_ptr<Command> cmd) {
         double result = cmd->execute();
         commandHistory.push_back(cmd);
         undoStack.push(cmd);
+        resultHistory.push_back(result); // Сохраняем результат
         
         // Очищаем стек redo при новом действии
         while (!redoStack.empty()) {
@@ -171,6 +204,53 @@ double Calculator::executeCommand(const std::string& commandName,
         *expCmd = ExpCommand(operands[0]);
         return executeCommand(expCmd);
     }
+    else if (auto andCmd = std::dynamic_pointer_cast<BitwiseAndCommand>(cmd)) {
+        if (operands.size() < 2) {
+            throw std::invalid_argument("Bitwise AND requires 2 operands");
+        }
+        *andCmd = BitwiseAndCommand(static_cast<int>(operands[0]), 
+                                   static_cast<int>(operands[1]));
+        return executeCommand(andCmd);
+    }
+    else if (auto orCmd = std::dynamic_pointer_cast<BitwiseOrCommand>(cmd)) {
+        if (operands.size() < 2) {
+            throw std::invalid_argument("Bitwise OR requires 2 operands");
+        }
+        *orCmd = BitwiseOrCommand(static_cast<int>(operands[0]), 
+                                 static_cast<int>(operands[1]));
+        return executeCommand(orCmd);
+    }
+    else if (auto xorCmd = std::dynamic_pointer_cast<BitwiseXorCommand>(cmd)) {
+        if (operands.size() < 2) {
+            throw std::invalid_argument("Bitwise XOR requires 2 operands");
+        }
+        *xorCmd = BitwiseXorCommand(static_cast<int>(operands[0]), 
+                                   static_cast<int>(operands[1]));
+        return executeCommand(xorCmd);
+    }
+    else if (auto notCmd = std::dynamic_pointer_cast<BitwiseNotCommand>(cmd)) {
+        if (operands.size() < 1) {
+            throw std::invalid_argument("Bitwise NOT requires 1 operand");
+        }
+        *notCmd = BitwiseNotCommand(static_cast<int>(operands[0]));
+        return executeCommand(notCmd);
+    }
+    else if (auto shiftLCmd = std::dynamic_pointer_cast<ShiftLeftCommand>(cmd)) {
+        if (operands.size() < 2) {
+            throw std::invalid_argument("Shift left requires 2 operands");
+        }
+        *shiftLCmd = ShiftLeftCommand(static_cast<int>(operands[0]), 
+                                     static_cast<int>(operands[1]));
+        return executeCommand(shiftLCmd);
+    }
+    else if (auto shiftRCmd = std::dynamic_pointer_cast<ShiftRightCommand>(cmd)) {
+        if (operands.size() < 2) {
+            throw std::invalid_argument("Shift right requires 2 operands");
+        }
+        *shiftRCmd = ShiftRightCommand(static_cast<int>(operands[0]), 
+                                      static_cast<int>(operands[1]));
+        return executeCommand(shiftRCmd);
+    }
     
     throw std::invalid_argument("Unsupported command type: " + commandName);
 }
@@ -186,6 +266,16 @@ bool Calculator::undo() {
     cmd->undo();
     redoStack.push(cmd);
     
+    // Обновляем currentResult из истории
+    if (!resultHistory.empty()) {
+        resultHistory.pop_back(); // Удаляем последний результат
+        if (!resultHistory.empty()) {
+            currentResult = resultHistory.back(); // Берем предыдущий
+        } else {
+            currentResult = 0.0;
+        }
+    }
+    
     spdlog::info("Command undone: {}", cmd->getName());
     return true;
 }
@@ -198,8 +288,11 @@ bool Calculator::redo() {
     
     auto cmd = redoStack.top();
     redoStack.pop();
-    cmd->execute();  // Повторное выполнение
+    double result = cmd->execute();  // Повторное выполнение
     undoStack.push(cmd);
+    resultHistory.push_back(result); // Сохраняем результат
+    
+    currentResult = result;
     
     spdlog::info("Command redone: {}", cmd->getName());
     return true;
@@ -207,6 +300,7 @@ bool Calculator::redo() {
 
 void Calculator::clearHistory() {
     commandHistory.clear();
+    resultHistory.clear(); // Очищаем историю результатов
     while (!undoStack.empty()) undoStack.pop();
     while (!redoStack.empty()) redoStack.pop();
     spdlog::info("Command history cleared");

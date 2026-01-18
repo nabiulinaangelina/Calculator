@@ -3,6 +3,7 @@ add_executable(tests_calculator
     tests_Standard.cpp
     tests_Calculator.cpp
     tests_Scientific.cpp
+    tests_Programmer.cpp
 )
 
 # Линкуем с библиотекой проекта, это автоматически добавляет путь "../include"

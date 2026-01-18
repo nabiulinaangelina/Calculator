@@ -23,6 +23,7 @@ private:
     
     // Текущий результат
     double currentResult;
+    std::vector<double> resultHistory;
     
     // Приватный конструктор
     Calculator();
