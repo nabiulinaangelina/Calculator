@@ -4,6 +4,7 @@
 #include "commands/arithmetic/SqrtCommand.hpp"
 #include <spdlog/spdlog.h>
 #include <stdexcept>
+#include <functional>
 
 // Инициализация статического указателя
 Calculator* Calculator::instance = nullptr;
@@ -144,4 +145,16 @@ std::vector<std::string> Calculator::getAvailableCommands() const {
         commands.push_back(name);
     }
     return commands;
+}
+
+const std::vector<std::shared_ptr<Command>>& Calculator::getHistory() const {
+    return commandHistory;
+}
+
+double Calculator::getCurrentResult() const { 
+    return currentResult; 
+}
+
+void Calculator::setCurrentResult(double result) { 
+    currentResult = result; 
 }

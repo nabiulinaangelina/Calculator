@@ -5,7 +5,6 @@ add_executable(app_calculator
     main.cpp
     AppCalculator.cpp #  App здесь, в приложении!
     Menu.cpp
-    Calculator.cpp
 )
 
 # ============================================
@@ -13,6 +12,7 @@ add_executable(app_calculator
 # ============================================
 add_library(lib_calculator 
     Standard.cpp
+    Calculator.cpp
 )
 
 # Объявляем, что заголовочные файлы находятся в ../include.
@@ -25,6 +25,8 @@ add_library(lib_calculator
 target_include_directories(lib_calculator
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/commands>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/data_structures>
 )
 
 # ПРАВИЛЬНО: PUBLIC для библиотеки
@@ -47,7 +49,7 @@ target_link_libraries(app_calculator
 # Если у App есть свой заголовок (.hpp), добавляем:
 target_include_directories(app_calculator
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}  # Для AppCalculator.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
 

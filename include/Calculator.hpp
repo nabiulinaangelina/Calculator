@@ -54,18 +54,16 @@ public:
     bool redo();
     
     // Получение истории
-    const std::vector<std::shared_ptr<Command>>& getHistory() const {
-        return commandHistory;
-    }
+    const std::vector<std::shared_ptr<Command>>& getHistory() const;
     
     // Очистка истории
     void clearHistory();
     
     // Получение текущего результата
-    double getCurrentResult() const { return currentResult; }
+    double getCurrentResult() const;
     
     // Установка текущего результата
-    void setCurrentResult(double result) { currentResult = result; }
+    void setCurrentResult(double result);
     
     // Получение списка доступных команд
     std::vector<std::string> getAvailableCommands() const;

@@ -1,6 +1,7 @@
 # Создаём исполняемый файл для тестов
 add_executable(tests_calculator
-    tests_Standart.cpp
+    tests_Standard.cpp
+    tests_Calculator.cpp
 )
 
 # Линкуем с библиотекой проекта, это автоматически добавляет путь "../include"
@@ -10,6 +11,14 @@ target_link_libraries(tests_calculator
         lib_calculator
         GTest::gtest_main
         spdlog::spdlog
+)
+
+target_include_directories(tests_calculator
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include/data_structures
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include/commands
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include/commands/arithmetic
 )
 
 # --- Обнаружение тестов CTest ---

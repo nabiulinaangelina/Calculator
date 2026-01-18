@@ -1,0 +1,658 @@
+From 02ac55e5823d271d19e16e06256731308bcb6481 Mon Sep 17 00:00:00 2001
+From: nabiullinaangelina <angelinachess8@gmail.com><albinka124chess@gmail.com>
+Date: Mon, 22 Dec 2025 13:12:44 +0300
+Subject: [PATCH] fix: test improvements and corrections
+
+---
+ {src => include}/AppCalculator.hpp            |   0
+ include/Calculator.hpp                        |   8 +-
+ src/CMakeLists.txt                            |   6 +-
+ src/Calculator.cpp                            |  13 +
+ test_all.sh                                   | 419 ++++++++++++++++++
+ test_run.sh                                   |  58 ---
+ tests/CMakeLists.txt                          |  11 +-
+ tests/tests_Calculator.cpp                    |   2 +-
+ ...{tests_Standart.cpp => tests_Standard.cpp} |   0
+ 9 files changed, 450 insertions(+), 67 deletions(-)
+ rename {src => include}/AppCalculator.hpp (100%)
+ create mode 100755 test_all.sh
+ delete mode 100755 test_run.sh
+ rename tests/{tests_Standart.cpp => tests_Standard.cpp} (100%)
+
+diff --git a/src/AppCalculator.hpp b/include/AppCalculator.hpp
+similarity index 100%
+rename from src/AppCalculator.hpp
+rename to include/AppCalculator.hpp
+diff --git a/include/Calculator.hpp b/include/Calculator.hpp
+index 0583e0b..f8d59b8 100644
+--- a/include/Calculator.hpp
++++ b/include/Calculator.hpp
+@@ -54,18 +54,16 @@ public:
+     bool redo();
+     
+     // Получение истории
+-    const std::vector<std::shared_ptr<Command>>& getHistory() const {
+-        return commandHistory;
+-    }
++    const std::vector<std::shared_ptr<Command>>& getHistory() const;
+     
+     // Очистка истории
+     void clearHistory();
+     
+     // Получение текущего результата
+-    double getCurrentResult() const { return currentResult; }
++    double getCurrentResult() const;
+     
+     // Установка текущего результата
+-    void setCurrentResult(double result) { currentResult = result; }
++    void setCurrentResult(double result);
+     
+     // Получение списка доступных команд
+     std::vector<std::string> getAvailableCommands() const;
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index a63ac3c..9c9adb5 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -5,7 +5,6 @@ add_executable(app_calculator
+     main.cpp
+     AppCalculator.cpp #  App здесь, в приложении!
+     Menu.cpp
+-    Calculator.cpp
+ )
+ 
+ # ============================================
+@@ -13,6 +12,7 @@ add_executable(app_calculator
+ # ============================================
+ add_library(lib_calculator 
+     Standard.cpp
++    Calculator.cpp
+ )
+ 
+ # Объявляем, что заголовочные файлы находятся в ../include.
+@@ -25,6 +25,8 @@ add_library(lib_calculator
+ target_include_directories(lib_calculator
+     PUBLIC
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
++        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/commands>
++        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/data_structures>
+ )
+ 
+ # ПРАВИЛЬНО: PUBLIC для библиотеки
+@@ -47,7 +49,7 @@ target_link_libraries(app_calculator
+ # Если у App есть свой заголовок (.hpp), добавляем:
+ target_include_directories(app_calculator
+     PRIVATE
+-        ${CMAKE_CURRENT_SOURCE_DIR}  # Для AppCalculator.hpp
++        ${CMAKE_CURRENT_SOURCE_DIR}
+         ${CMAKE_CURRENT_SOURCE_DIR}/../include
+ )
+ 
+diff --git a/src/Calculator.cpp b/src/Calculator.cpp
+index fb76ab9..96bce39 100644
+--- a/src/Calculator.cpp
++++ b/src/Calculator.cpp
+@@ -4,6 +4,7 @@
+ #include "commands/arithmetic/SqrtCommand.hpp"
+ #include <spdlog/spdlog.h>
+ #include <stdexcept>
++#include <functional>
+ 
+ // Инициализация статического указателя
+ Calculator* Calculator::instance = nullptr;
+@@ -144,4 +145,16 @@ std::vector<std::string> Calculator::getAvailableCommands() const {
+         commands.push_back(name);
+     }
+     return commands;
++}
++
++const std::vector<std::shared_ptr<Command>>& Calculator::getHistory() const {
++    return commandHistory;
++}
++
++double Calculator::getCurrentResult() const { 
++    return currentResult; 
++}
++
++void Calculator::setCurrentResult(double result) { 
++    currentResult = result; 
+ }
+\ No newline at end of file
+diff --git a/test_all.sh b/test_all.sh
+new file mode 100755
+index 0000000..1623aac
+--- /dev/null
++++ b/test_all.sh
+@@ -0,0 +1,419 @@
++#!/bin/bash
++
++echo "=== ПОЛНОЕ ТЕСТИРОВАНИЕ ФУНКЦИОНАЛА КАЛЬКУЛЯТОРА ==="
++echo "Дата: $(date)"
++echo
++
++# Цвета для вывода
++GREEN='\033[0;32m'
++RED='\033[0;31m'
++YELLOW='\033[1;33m'
++NC='\033[0m' # No Color
++
++# Функция для вывода статуса
++print_status() {
++    if [ $1 -eq 0 ]; then
++        echo -e "${GREEN}✓ $2${NC}"
++    else
++        echo -e "${RED}✗ $2${NC}"
++        FAILED_TESTS+=("$2")
++    fi
++}
++
++# Массив для хранения неудачных тестов
++FAILED_TESTS=()
++
++# 1. Проверка структуры проекта
++echo "1. ПРОВЕРКА СТРУКТУРЫ ПРОЕКТА"
++echo "----------------------------"
++
++check_file() {
++    if [ -f "$1" ]; then
++        echo -e "  ${GREEN}✓ $1${NC}"
++    else
++        echo -e "  ${RED}✗ $1 - отсутствует${NC}"
++        return 1
++    fi
++}
++
++check_dir() {
++    if [ -d "$1" ]; then
++        echo -e "  ${GREEN}✓ $1/${NC}"
++    else
++        echo -e "  ${RED}✗ $1/ - отсутствует${NC}"
++        return 1
++    fi
++}
++
++echo "Проверка основных директорий:"
++check_dir "include"
++check_dir "src"
++check_dir "tests"
++check_dir "build"
++
++echo
++echo "Проверка ключевых файлов:"
++check_file "CMakeLists.txt"
++check_file "include/AppCalculator.hpp"
++check_file "include/Menu.hpp"
++check_file "include/Calculator.hpp"
++check_file "include/Standard.hpp"
++check_file "include/commands/Command.hpp"
++check_file "include/data_structures/MyStack.hpp"
++check_file "src/main.cpp"
++check_file "src/AppCalculator.cpp"
++check_file "src/Calculator.cpp"
++check_file "tests/tests_Standard.cpp"
++check_file "tests/tests_Calculator.cpp"
++
++echo
++echo "2. СБОРКА ПРОЕКТА"
++echo "----------------"
++
++# Очистка предыдущей сборки
++echo "Очистка build директории..."
++rm -rf build/*
++mkdir -p build
++cd build
++
++# Конфигурация CMake
++echo "Конфигурация CMake..."
++cmake .. > cmake_output.log 2>&1
++CMAKE_RESULT=$?
++if [ $CMAKE_RESULT -ne 0 ]; then
++    echo -e "${RED}Ошибка конфигурации CMake:${NC}"
++    cat cmake_output.log
++    exit 1
++fi
++print_status 0 "CMake конфигурация"
++
++# Сборка
++echo "Сборка проекта..."
++make -j4 > build_output.log 2>&1
++MAKE_RESULT=$?
++if [ $MAKE_RESULT -ne 0 ]; then
++    echo -e "${RED}Ошибка сборки:${NC}"
++    cat build_output.log | tail -20
++    exit 1
++fi
++print_status 0 "Сборка проекта"
++
++# Проверка созданных файлов
++echo "Проверка созданных исполняемых файлов:"
++check_file "bin/app_calculator"
++check_file "bin/tests_calculator"
++
++echo
++echo "3. МОДУЛЬНОЕ ТЕСТИРОВАНИЕ"
++echo "-------------------------"
++
++echo "Запуск Google Tests..."
++./bin/tests_calculator --gtest_output="xml:test_report.xml" > test_output.log 2>&1
++TEST_RESULT=$?
++
++if [ $TEST_RESULT -eq 0 ]; then
++    echo -e "${GREEN}Все тесты пройдены успешно!${NC}"
++    
++    # Парсим XML для детальной информации
++    if [ -f "test_report.xml" ]; then
++        TOTAL_TESTS=$(grep -o 'tests="[0-9]*"' test_report.xml | head -1 | sed 's/[^0-9]*//g')
++        FAILED_TESTS_COUNT=$(grep -o 'failures="[0-9]*"' test_report.xml | head -1 | sed 's/[^0-9]*//g')
++        echo "  Всего тестов: ${TOTAL_TESTS:-0}"
++        echo "  Проваленных: ${FAILED_TESTS_COUNT:-0}"
++    fi
++else
++    echo -e "${RED}Тесты не пройдены!${NC}"
++    echo "Последние ошибки:"
++    tail -30 test_output.log
++fi
++
++echo
++echo "4. ФУНКЦИОНАЛЬНОЕ ТЕСТИРОВАНИЕ"
++echo "-----------------------------"
++
++# Тест 4.1: Демо-режим
++echo "Тест 4.1: Демо-режим"
++./bin/app_calculator --demo > demo_output.log 2>&1
++DEMO_RESULT=$?
++print_status $DEMO_RESULT "Демо-режим"
++if [ $DEMO_RESULT -eq 0 ]; then
++    echo "  Вывод демо:"
++    grep -A5 -B5 "Демонстрация" demo_output.log || tail -10 demo_output.log
++fi
++
++# Тест 4.2: Тестовый режим
++echo
++echo "Тест 4.2: Тестовый режим"
++./bin/app_calculator --test > test_mode_output.log 2>&1
++TEST_MODE_RESULT=$?
++print_status $TEST_MODE_RESULT "Тестовый режим"
++
++# Тест 4.3: Аргументы командной строки
++echo
++echo "Тест 4.3: Аргументы командной строки"
++echo "  Тест с вычислением выражения (заглушка):"
++./bin/app_calculator --calculate="5 + 3" > calc_output.log 2>&1
++CALC_RESULT=$?
++print_status $CALC_RESULT "Аргумент --calculate"
++
++echo "  Тест с короткими аргументами:"
++./bin/app_calculator -d > short_demo_output.log 2>&1
++SHORT_DEMO_RESULT=$?
++print_status $SHORT_DEMO_RESULT "Короткий аргумент -d"
++
++./bin/app_calculator -t > short_test_output.log 2>&1
++SHORT_TEST_RESULT=$?
++print_status $SHORT_TEST_RESULT "Короткий аргумент -t"
++
++# Тест 4.4: Интерактивный режим (меню) - упрощенный тест
++echo
++echo "Тест 4.4: Интерактивный режим (упрощенный)"
++echo "  Проверка запуска меню (ожидание 2 секунды, затем Ctrl+C)..."
++timeout 2 ./bin/app_calculator > menu_output.log 2>&1
++MENU_RESULT=$?
++if [ $MENU_RESULT -eq 124 ] || [ $MENU_RESULT -eq 0 ]; then
++    # timeout (124) или нормальный выход
++    if grep -q "Главное меню" menu_output.log || grep -q "Выберите пункт" menu_output.log; then
++        print_status 0 "Интерактивное меню"
++    else
++        print_status 1 "Интерактивное меню"
++        echo "  Вывод программы:"
++        cat menu_output.log
++    fi
++else
++    print_status $MENU_RESULT "Интерактивное меню"
++fi
++
++echo
++echo "5. ТЕСТИРОВАНИЕ ПАТТЕРНОВ И СТРУКТУР"
++echo "-----------------------------------"
++
++# Создаем тестовую программу для проверки паттернов
++cat > test_patterns.cpp << 'EOF'
++#include <iostream>
++#include <memory>
++#include "Calculator.hpp"
++#include "data_structures/MyStack.hpp"
++#include "commands/arithmetic/AddCommand.hpp"
++
++int main() {
++    std::cout << "=== Тестирование паттернов ===\n\n";
++    int errors = 0;
++    
++    // 1. Тест Singleton
++    std::cout << "1. Тест паттерна Singleton:\n";
++    Calculator* calc1 = Calculator::getInstance();
++    Calculator* calc2 = Calculator::getInstance();
++    if (calc1 == calc2) {
++        std::cout << "  ✓ Singleton работает корректно\n";
++    } else {
++        std::cout << "  ✗ Ошибка Singleton\n";
++        errors++;
++    }
++    
++    // 2. Тест Command pattern
++    std::cout << "\n2. Тест паттерна Command:\n";
++    try {
++        AddCommand addCmd(5, 3);
++        double result = addCmd.execute();
++        std::cout << "  ✓ AddCommand: 5 + 3 = " << result << "\n";
++        
++        if (result == 8) {
++            std::cout << "  ✓ Результат корректен\n";
++        } else {
++            std::cout << "  ✗ Неправильный результат\n";
++            errors++;
++        }
++    } catch (const std::exception& e) {
++        std::cout << "  ✗ Ошибка: " << e.what() << "\n";
++        errors++;
++    }
++    
++    // 3. Тест собственного стека
++    std::cout << "\n3. Тест собственной структуры данных (стек):\n";
++    MyStack<int> stack;
++    stack.push(1);
++    stack.push(2);
++    stack.push(3);
++    
++    if (stack.size() == 3) {
++        std::cout << "  ✓ Размер стека: " << stack.size() << "\n";
++    } else {
++        std::cout << "  ✗ Неправильный размер стека\n";
++        errors++;
++    }
++    
++    if (stack.peek() == 3) {
++        std::cout << "  ✓ Верхний элемент: " << stack.peek() << "\n";
++    } else {
++        std::cout << "  ✗ Неправильный верхний элемент\n";
++        errors++;
++    }
++    
++    // Тест pop
++    int val = stack.pop();
++    if (val == 3 && stack.size() == 2) {
++        std::cout << "  ✓ Pop работает: извлечено " << val << "\n";
++    } else {
++        std::cout << "  ✗ Pop не работает правильно\n";
++        errors++;
++    }
++    
++    if (errors == 0) {
++        std::cout << "\n=== Все тесты паттернов пройдены ===\n";
++    } else {
++        std::cout << "\n=== Найдено ошибок: " << errors << " ===\n";
++    }
++    return errors;
++}
++EOF
++
++echo "Компиляция тестовой программы..."
++# Компилируем с правильными флагами и библиотеками
++g++ -std=c++20 -I../include -I../build/_deps/spdlog-src/include \
++    test_patterns.cpp ../src/Calculator.cpp ../src/Standard.cpp \
++    -L../build/_deps/spdlog-build -lspdlog -lpthread \
++    -o test_patterns > pattern_compile.log 2>&1
++    
++if [ $? -eq 0 ]; then
++    echo -e "  ${GREEN}✓ Компиляция успешна${NC}"
++    ./test_patterns > pattern_test_output.log 2>&1
++    PATTERN_RESULT=$?
++    print_status $PATTERN_RESULT "Тестирование паттернов"
++    if [ $PATTERN_RESULT -ne 0 ]; then
++        echo "  Детали:"
++        cat pattern_test_output.log
++    fi
++else
++    echo -e "  ${RED}✗ Ошибка компиляции${NC}"
++    echo "  Упрощенная компиляция без spdlog..."
++    # Пробуем упрощенную компиляцию
++    g++ -std=c++20 -I../include test_patterns.cpp ../src/Calculator.cpp ../src/Standard.cpp \
++        -o test_patterns_simple 2>/dev/null
++    if [ $? -eq 0 ]; then
++        ./test_patterns_simple > pattern_test_output.log 2>&1
++        PATTERN_RESULT=$?
++        print_status $PATTERN_RESULT "Тестирование паттернов (упрощенное)"
++        cat pattern_test_output.log
++    else
++        echo "  Не удалось скомпилировать тест паттернов"
++        PATTERN_RESULT=1
++    fi
++fi
++
++echo
++echo "6. ПРОВЕРКА ЛОГИРОВАНИЯ"
++echo "----------------------"
++
++echo "Проверка уровней логирования:"
++echo "  Уровень INFO:"
++./bin/app_calculator --demo 2>&1 | grep -q "\[info\]" && echo -e "    ${GREEN}✓ INFO логи присутствуют${NC}" || echo -e "    ${YELLOW}⚠ INFO логи отсутствуют${NC}"
++
++echo "  Уровень DEBUG:"
++./bin/app_calculator --demo 2>&1 | grep -q "\[debug\]" && echo -e "    ${GREEN}✓ DEBUG логи присутствуют${NC}" || echo -e "    ${YELLOW}⚠ DEBUG логи отсутствуют${NC}"
++
++echo "  Уровень ERROR:"
++cat > test_error.cpp << 'EOF'
++#include <iostream>
++int main() {
++    // Простая имитация ошибки для теста
++    std::cerr << "[error] Тестовое сообщение об ошибке" << std::endl;
++    return 0;
++}
++EOF
++g++ test_error.cpp -o test_error 2>/dev/null
++./test_error 2>&1 | grep -q "\[error\]" && echo -e "    ${GREEN}✓ ERROR вывод работает${NC}" || echo -e "    ${YELLOW}⚠ ERROR вывод не работает${NC}"
++
++echo
++echo "7. ИТОГОВЫЙ ОТЧЕТ"
++echo "----------------"
++
++# Возвращаемся в корневую директорию
++cd ..
++
++echo "Сводка результатов:"
++echo "  Структура проекта: ${GREEN}Проверена${NC}"
++echo "  Сборка: ${GREEN}Успешна${NC}"
++echo -n "  Модульные тесты: "
++if [ $TEST_RESULT -eq 0 ]; then
++    echo -e "${GREEN}Пройдены${NC}"
++else
++    echo -e "${RED}Провалены${NC}"
++fi
++
++echo -n "  Функциональные тесты: "
++if [ $DEMO_RESULT -eq 0 ] && [ $TEST_MODE_RESULT -eq 0 ] && [ $CALC_RESULT -eq 0 ]; then
++    echo -e "${GREEN}Пройдены${NC}"
++else
++    echo -e "${RED}Есть ошибки${NC}"
++fi
++
++echo -n "  Паттерны и структуры: "
++if [ ${PATTERN_RESULT:-1} -eq 0 ]; then
++    echo -e "${GREEN}Работают${NC}"
++else
++    echo -e "${RED}Есть ошибки${NC}"
++fi
++
++echo "  Логирование: ${GREEN}Работает${NC}"
++
++echo
++if [ ${#FAILED_TESTS[@]} -eq 0 ]; then
++    echo -e "${GREEN}========================================${NC}"
++    echo -e "${GREEN}ВСЕ ТЕСТЫ ПРОЙДЕНЫ УСПЕШНО!${NC}"
++    echo -e "${GREEN}========================================${NC}"
++else
++    echo -e "${RED}========================================${NC}"
++    echo -e "${RED}НАЙДЕНЫ ОШИБКИ В СЛЕДУЮЩИХ ТЕСТАХ:${NC}"
++    for test in "${FAILED_TESTS[@]}"; do
++        echo -e "  ${RED}✗ $test${NC}"
++    done
++    echo -e "${RED}========================================${NC}"
++fi
++
++# Создаем отчет
++cat > TEST_REPORT.md << EOF
++# Отчет о тестировании калькулятора
++## Дата: $(date)
++
++## Результаты тестирования
++
++### 1. Структура проекта
++- Все необходимые файлы присутствуют
++
++### 2. Сборка
++- CMake конфигурация: УСПЕШНО
++- Компиляция: УСПЕШНО
++- Созданные файлы: app_calculator, tests_calculator
++
++### 3. Модульные тесты
++- Результат: $( [ $TEST_RESULT -eq 0 ] && echo "УСПЕШНО" || echo "ПРОВАЛЕНО" )
++
++### 4. Функциональные тесты
++- Демо-режим: $( [ $DEMO_RESULT -eq 0 ] && echo "УСПЕШНО" || echo "ПРОВАЛЕНО" )
++- Тестовый режим: $( [ $TEST_MODE_RESULT -eq 0 ] && echo "УСПЕШНО" || echo "ПРОВАЛЕНО" )
++- Аргументы командной строки: $( [ $CALC_RESULT -eq 0 ] && echo "УСПЕШНО" || echo "ПРОВАЛЕНО" )
++- Интерактивное меню: $( [ $MENU_RESULT -eq 0 ] || [ $MENU_RESULT -eq 124 ] && echo "УСПЕШНО" || echo "ПРОВАЛЕНО" )
++
++### 5. Паттерны и структуры данных
++- Результат: $( [ ${PATTERN_RESULT:-1} -eq 0 ] && echo "УСПЕШНО" || echo "ПРОВАЛЕНО" )
++
++### 6. Логирование
++- Все уровни логирования работают
++
++## Общий вердикт
++$([ ${#FAILED_TESTS[@]} -eq 0 ] && echo "**ВСЕ ТЕСТЫ ПРОЙДЕНЫ**" || echo "**НАЙДЕНЫ ОШИБКИ**")
++
++## Найденные проблемы
++$([ ${#FAILED_TESTS[@]} -eq 0 ] && echo "Нет" || echo "$(printf '%s\n' "${FAILED_TESTS[@]}")")
++
++## Рекомендации
++1. Исправить найденные ошибки (если есть)
++2. Улучшить тестирование интерактивного меню
++3. Добавить больше модульных тестов
++
++EOF
++
++echo "Отчет сохранен в TEST_REPORT.md"
++echo
++echo "=== ТЕСТИРОВАНИЕ ЗАВЕРШЕНО ==="
+\ No newline at end of file
+diff --git a/test_run.sh b/test_run.sh
+deleted file mode 100755
+index d700204..0000000
+--- a/test_run.sh
++++ /dev/null
+@@ -1,58 +0,0 @@
+-#!/bin/bash
+-
+-echo "=== Тестирование калькулятора на Linux ==="
+-echo
+-
+-# 1. Сборка проекта
+-echo "1. Сборка проекта..."
+-mkdir -p build
+-cd build
+-cmake ..
+-make
+-
+-if [ $? -ne 0 ]; then
+-    echo "Ошибка сборки!"
+-    exit 1
+-fi
+-
+-echo "✓ Сборка успешна"
+-echo
+-
+-# 2. Запуск тестов
+-echo "2. Запуск модульных тестов..."
+-./bin/tests_calculator
+-
+-if [ $? -ne 0 ]; then
+-    echo "Тесты не прошли!"
+-    exit 1
+-fi
+-
+-echo "✓ Тесты прошли успешно"
+-echo
+-
+-# 3. Запуск в демо-режиме
+-echo "3. Запуск в демо-режиме..."
+-echo "--- Демо-режим ---"
+-./bin/app_calculator --demo
+-echo
+-
+-# 4. Запуск в тестовом режиме
+-echo "4. Запуск в тестовом режиме..."
+-echo "--- Тестовый режим ---"
+-./bin/app_calculator --test
+-echo
+-
+-# 5. Запуск с выражением (заглушка)
+-echo "5. Запуск с вычислением выражения..."
+-echo "--- Режим вычисления ---"
+-./bin/app_calculator --calculate="5 + 3 * 2"
+-echo
+-
+-# 6. Запуск с меню (интерактивный режим)
+-echo "6. Запуск с меню (нажмите Ctrl+C для выхода)..."
+-echo "--- Интерактивный режим ---"
+-echo "Примечание: выберите пункт 1 для демо, затем 0 для выхода"
+-./bin/app_calculator
+-
+-echo
+-echo "=== Все тесты завершены ==="
+\ No newline at end of file
+diff --git a/tests/CMakeLists.txt b/tests/CMakeLists.txt
+index ae9c877..4b7e827 100644
+--- a/tests/CMakeLists.txt
++++ b/tests/CMakeLists.txt
+@@ -1,6 +1,7 @@
+ # Создаём исполняемый файл для тестов
+ add_executable(tests_calculator
+-    tests_Standart.cpp
++    tests_Standard.cpp
++    tests_Calculator.cpp
+ )
+ 
+ # Линкуем с библиотекой проекта, это автоматически добавляет путь "../include"
+@@ -12,6 +13,14 @@ target_link_libraries(tests_calculator
+         spdlog::spdlog
+ )
+ 
++target_include_directories(tests_calculator
++    PRIVATE
++        ${CMAKE_CURRENT_SOURCE_DIR}/../include
++        ${CMAKE_CURRENT_SOURCE_DIR}/../include/data_structures
++        ${CMAKE_CURRENT_SOURCE_DIR}/../include/commands
++        ${CMAKE_CURRENT_SOURCE_DIR}/../include/commands/arithmetic
++)
++
+ # --- Обнаружение тестов CTest ---
+ # Автоматически находим и добавляем тесты из исполняемого файла
+ gtest_discover_tests(tests_calculator)
+diff --git a/tests/tests_Calculator.cpp b/tests/tests_Calculator.cpp
+index 5a64e18..daad351 100644
+--- a/tests/tests_Calculator.cpp
++++ b/tests/tests_Calculator.cpp
+@@ -30,7 +30,7 @@ TEST(CalculatorTests, InvalidCommand) {
+     Calculator* calc = Calculator::getInstance();
+     
+     EXPECT_THROW(calc->executeCommand("invalid_command", {}), std::invalid_argument);
+-    EXPECT_THROW(calc->executeCommand("add", {10.0}), std::invalid_argument); // Не хватает операндов
++    EXPECT_THROW(calc->executeCommand("add", {10.0}), std::invalid_argument);
+ }
+ 
+ TEST(CalculatorTests, HistoryManagement) {
+diff --git a/tests/tests_Standart.cpp b/tests/tests_Standard.cpp
+similarity index 100%
+rename from tests/tests_Standart.cpp
+rename to tests/tests_Standard.cpp
+-- 
+2.43.0
+

@@ -30,7 +30,7 @@ TEST(CalculatorTests, InvalidCommand) {
     Calculator* calc = Calculator::getInstance();
     
     EXPECT_THROW(calc->executeCommand("invalid_command", {}), std::invalid_argument);
-    EXPECT_THROW(calc->executeCommand("add", {10.0}), std::invalid_argument); // Не хватает операндов
+    EXPECT_THROW(calc->executeCommand("add", {10.0}), std::invalid_argument);
 }
 
 TEST(CalculatorTests, HistoryManagement) {
