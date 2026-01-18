@@ -17,7 +17,8 @@ void Menu::addItem(const std::string& title, std::function<void()> action) {
 }
 
 void Menu::clearScreen() {
-    std::system(CLEAR_COMMAND);
+    int result = std::system(CLEAR_COMMAND);
+    (void)result;
 }
 
 void Menu::run() {

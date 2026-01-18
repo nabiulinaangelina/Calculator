@@ -35,6 +35,7 @@ private:
     void demoBasicArithmetic();
     void demoStandardOperations();
     void demoCalculatorWithCommands();
+    void demoScientificFunctions();
 };
 
 #endif // APPCALCULATOR_HPP

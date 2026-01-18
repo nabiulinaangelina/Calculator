@@ -2,6 +2,12 @@
 #include "commands/arithmetic/AddCommand.hpp"
 #include "commands/arithmetic/SubtractCommand.hpp"
 #include "commands/arithmetic/SqrtCommand.hpp"
+#include "commands/scientific/SinCommand.hpp"
+#include "commands/scientific/CosCommand.hpp"
+#include "commands/scientific/TanCommand.hpp"
+#include "commands/scientific/PowCommand.hpp"
+#include "commands/scientific/LogCommand.hpp"
+#include "commands/scientific/ExpCommand.hpp"
 #include <spdlog/spdlog.h>
 #include <stdexcept>
 #include <functional>
@@ -37,6 +43,31 @@ void Calculator::initializeCommandRegistry() {
     
     commandRegistry["sqrt"] = []() -> std::shared_ptr<Command> {
         return std::make_shared<SqrtCommand>(0);
+    };
+
+    // Научные команды
+    commandRegistry["sin"] = []() -> std::shared_ptr<Command> {
+        return std::make_shared<SinCommand>(0);
+    };
+    
+    commandRegistry["cos"] = []() -> std::shared_ptr<Command> {
+        return std::make_shared<CosCommand>(0);
+    };
+    
+    commandRegistry["tan"] = []() -> std::shared_ptr<Command> {
+        return std::make_shared<TanCommand>(0);
+    };
+    
+    commandRegistry["pow"] = []() -> std::shared_ptr<Command> {
+        return std::make_shared<PowCommand>(0, 0);
+    };
+    
+    commandRegistry["log"] = []() -> std::shared_ptr<Command> {
+        return std::make_shared<LogCommand>(0);
+    };
+    
+    commandRegistry["exp"] = []() -> std::shared_ptr<Command> {
+        return std::make_shared<ExpCommand>(0);
     };
     
     spdlog::debug("Command registry initialized with {} commands", commandRegistry.size());
@@ -97,6 +128,48 @@ double Calculator::executeCommand(const std::string& commandName,
         }
         *sqrtCmd = SqrtCommand(operands[0]);
         return executeCommand(sqrtCmd);
+    }
+    else if (auto sinCmd = std::dynamic_pointer_cast<SinCommand>(cmd)) {
+        if (operands.size() < 1) {
+            throw std::invalid_argument("Sin command requires 1 operand");
+        }
+        *sinCmd = SinCommand(operands[0], true); // по умолчанию радианы
+        return executeCommand(sinCmd);
+    }
+    else if (auto cosCmd = std::dynamic_pointer_cast<CosCommand>(cmd)) {
+        if (operands.size() < 1) {
+            throw std::invalid_argument("Cos command requires 1 operand");
+        }
+        *cosCmd = CosCommand(operands[0], true);
+        return executeCommand(cosCmd);
+    }
+    else if (auto tanCmd = std::dynamic_pointer_cast<TanCommand>(cmd)) {
+        if (operands.size() < 1) {
+            throw std::invalid_argument("Tan command requires 1 operand");
+        }
+        *tanCmd = TanCommand(operands[0], true);
+        return executeCommand(tanCmd);
+    }
+    else if (auto powCmd = std::dynamic_pointer_cast<PowCommand>(cmd)) {
+        if (operands.size() < 2) {
+            throw std::invalid_argument("Pow command requires 2 operands");
+        }
+        *powCmd = PowCommand(operands[0], operands[1]);
+        return executeCommand(powCmd);
+    }
+    else if (auto logCmd = std::dynamic_pointer_cast<LogCommand>(cmd)) {
+        if (operands.size() < 1) {
+            throw std::invalid_argument("Log command requires 1 operand");
+        }
+        *logCmd = LogCommand(operands[0]);
+        return executeCommand(logCmd);
+    }
+    else if (auto expCmd = std::dynamic_pointer_cast<ExpCommand>(cmd)) {
+        if (operands.size() < 1) {
+            throw std::invalid_argument("Exp command requires 1 operand");
+        }
+        *expCmd = ExpCommand(operands[0]);
+        return executeCommand(expCmd);
     }
     
     throw std::invalid_argument("Unsupported command type: " + commandName);
