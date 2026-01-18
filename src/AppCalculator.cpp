@@ -220,119 +220,110 @@ void AppCalculator::showScientificCalculator() {
     
     // Переменные для хранения ввода
     double num1 = 0, num2 = 0;
-    bool useRadians = true; // по умолчанию радианы
     
-    sciMenu.addItem("Синус (sin)", [&calc, &num1, &useRadians]() {
+    sciMenu.addItem("Синус (sin)", [calc]() {
         std::cout << "\nВведите угол: ";
-        std::cin >> num1;
+        double angle;
+        std::cin >> angle;
         
-        std::cout << "Единицы измерения:\n";
-        std::cout << "1. Радианы\n";
-        std::cout << "2. Градусы\n";
-        std::cout << "Выбор: ";
-        int choice;
-        std::cin >> choice;
-        bool radians = (choice == 1);
+        // Используем текущие настройки калькулятора
+        std::string unit = calc->getUseRadians() ? "рад" : "°";
+        std::cout << "Единицы: " << calc->getAngleModeString() << "\n";
         
         try {
-            double result = calc->executeCommand("sin", {num1});
-            std::string unit = radians ? "рад" : "град";
-            std::cout << "sin(" << num1 << " " << unit << ") = " << result << "\n";
+            double result = calc->executeCommand("sin", {angle});
+            std::cout << "sin(" << angle << unit << ") = " << result << "\n";
         } catch (const std::exception& e) {
             std::cout << "Ошибка: " << e.what() << "\n";
         }
     });
     
-    sciMenu.addItem("Косинус (cos)", [&calc, &num1, &useRadians]() {
+    sciMenu.addItem("Косинус (cos)", [calc]() {
         std::cout << "\nВведите угол: ";
-        std::cin >> num1;
+        double angle;
+        std::cin >> angle;
         
-        std::cout << "Единицы измерения:\n";
-        std::cout << "1. Радианы\n";
-        std::cout << "2. Градусы\n";
-        std::cout << "Выбор: ";
-        int choice;
-        std::cin >> choice;
-        bool radians = (choice == 1);
+        std::string unit = calc->getUseRadians() ? "рад" : "°";
+        std::cout << "Единицы: " << calc->getAngleModeString() << "\n";
         
         try {
-            double result = calc->executeCommand("cos", {num1});
-            std::string unit = radians ? "рад" : "град";
-            std::cout << "cos(" << num1 << " " << unit << ") = " << result << "\n";
+            double result = calc->executeCommand("cos", {angle});
+            std::cout << "cos(" << angle << unit << ") = " << result << "\n";
         } catch (const std::exception& e) {
             std::cout << "Ошибка: " << e.what() << "\n";
         }
     });
     
-    sciMenu.addItem("Тангенс (tan)", [&calc, &num1, &useRadians]() {
+    sciMenu.addItem("Тангенс (tan)", [calc]() {
         std::cout << "\nВведите угол: ";
-        std::cin >> num1;
+        double angle;
+        std::cin >> angle;
         
-        std::cout << "Единицы измерения:\n";
-        std::cout << "1. Радианы\n";
-        std::cout << "2. Градусы\n";
-        std::cout << "Выбор: ";
-        int choice;
-        std::cin >> choice;
-        bool radians = (choice == 1);
+        std::string unit = calc->getUseRadians() ? "рад" : "°";
+        std::cout << "Единицы: " << calc->getAngleModeString() << "\n";
         
         try {
-            double result = calc->executeCommand("tan", {num1});
-            std::string unit = radians ? "рад" : "град";
-            std::cout << "tan(" << num1 << " " << unit << ") = " << result << "\n";
+            double result = calc->executeCommand("tan", {angle});
+            std::cout << "tan(" << angle << unit << ") = " << result << "\n";
         } catch (const std::exception& e) {
             std::cout << "Ошибка: " << e.what() << "\n";
         }
     });
     
-    sciMenu.addItem("Возведение в степень (x^y)", [&calc, &num1, &num2]() {
+    sciMenu.addItem("Возведение в степень (x^y)", [calc]() {
         std::cout << "\nВведите основание (x): ";
-        std::cin >> num1;
+        double base;
+        std::cin >> base;
         std::cout << "Введите степень (y): ";
-        std::cin >> num2;
+        double exponent;
+        std::cin >> exponent;
         
         try {
-            double result = calc->executeCommand("pow", {num1, num2});
-            std::cout << num1 << "^" << num2 << " = " << result << "\n";
+            double result = calc->executeCommand("pow", {base, exponent});
+            std::cout << base << "^" << exponent << " = " << result << "\n";
         } catch (const std::exception& e) {
             std::cout << "Ошибка: " << e.what() << "\n";
         }
     });
     
-    sciMenu.addItem("Натуральный логарифм (ln)", [&calc, &num1]() {
+    sciMenu.addItem("Натуральный логарифм (ln)", [calc]() {
         std::cout << "\nВведите число: ";
-        std::cin >> num1;
+        double value;
+        std::cin >> value;
         
         try {
-            double result = calc->executeCommand("log", {num1});
-            std::cout << "ln(" << num1 << ") = " << result << "\n";
+            double result = calc->executeCommand("log", {value});
+            std::cout << "ln(" << value << ") = " << result << "\n";
         } catch (const std::exception& e) {
             std::cout << "Ошибка: " << e.what() << "\n";
         }
     });
     
-    sciMenu.addItem("Экспонента (e^x)", [&calc, &num1]() {
+    sciMenu.addItem("Экспонента (e^x)", [calc]() {
         std::cout << "\nВведите показатель степени: ";
-        std::cin >> num1;
+        double exponent;
+        std::cin >> exponent;
         
         try {
-            double result = calc->executeCommand("exp", {num1});
-            std::cout << "e^" << num1 << " = " << result << "\n";
+            double result = calc->executeCommand("exp", {exponent});
+            std::cout << "e^" << exponent << " = " << result << "\n";
         } catch (const std::exception& e) {
             std::cout << "Ошибка: " << e.what() << "\n";
         }
     });
     
-    sciMenu.addItem("Переключить единицы измерения", [&useRadians]() {
-        useRadians = !useRadians;
+    sciMenu.addItem("Переключить единицы измерения", [calc]() {
+        calc->toggleAngleMode();
         std::cout << "\nТеперь используются: " 
-                  << (useRadians ? "радианы" : "градусы") << "\n";
+                  << calc->getAngleModeString() << "\n";
     });
     
-    sciMenu.addItem("Текущие настройки", [&useRadians]() {
+    sciMenu.addItem("Текущие настройки", [calc]() {
         std::cout << "\nТекущие настройки:\n";
         std::cout << "- Единицы измерения: " 
-                  << (useRadians ? "радианы" : "градусы") << "\n";
+                  << calc->getAngleModeString() << "\n";
+        std::cout << "- Доступных команд: " 
+                  << calc->getAvailableCommands().size() << "\n";
     });
     
     sciMenu.addItem("Демо научных функций", [this]() {
@@ -342,14 +333,18 @@ void AppCalculator::showScientificCalculator() {
     sciMenu.run();
 }
 
-// Добавляем демо-функцию в класс AppCalculator
 void AppCalculator::demoScientificFunctions() {
     std::cout << "\n=== Демонстрация научных функций ===\n\n";
     
     Calculator* calc = Calculator::getInstance();
     calc->clearHistory();
     
+    // Сохраняем текущий режим
+    bool originalMode = calc->getUseRadians();
+    
+    // Демонстрация в радианах
     std::cout << "1. Тригонометрические функции (в радианах):\n";
+    calc->setUseRadians(true);
     try {
         double sinResult = calc->executeCommand("sin", {M_PI/6}); // 30 градусов
         std::cout << "   sin(π/6) = " << sinResult << " (ожидается ~0.5)\n";
@@ -363,7 +358,23 @@ void AppCalculator::demoScientificFunctions() {
         std::cout << "   Ошибка: " << e.what() << "\n";
     }
     
-    std::cout << "\n2. Экспонента и логарифм:\n";
+    // Демонстрация в градусах
+    std::cout << "\n2. Тригонометрические функции (в градусах):\n";
+    calc->setUseRadians(false);
+    try {
+        double sinResult = calc->executeCommand("sin", {30.0});
+        std::cout << "   sin(30°) = " << sinResult << " (ожидается ~0.5)\n";
+        
+        double cosResult = calc->executeCommand("cos", {60.0});
+        std::cout << "   cos(60°) = " << cosResult << " (ожидается ~0.5)\n";
+        
+        double tanResult = calc->executeCommand("tan", {45.0});
+        std::cout << "   tan(45°) = " << tanResult << " (ожидается ~1.0)\n";
+    } catch (const std::exception& e) {
+        std::cout << "   Ошибка: " << e.what() << "\n";
+    }
+    
+    std::cout << "\n3. Экспонента и логарифм:\n";
     try {
         double expResult = calc->executeCommand("exp", {1.0});
         std::cout << "   e^1 = " << expResult << " (ожидается ~2.71828)\n";
@@ -374,7 +385,7 @@ void AppCalculator::demoScientificFunctions() {
         std::cout << "   Ошибка: " << e.what() << "\n";
     }
     
-    std::cout << "\n3. Возведение в степень:\n";
+    std::cout << "\n4. Возведение в степень:\n";
     try {
         double powResult = calc->executeCommand("pow", {2.0, 3.0});
         std::cout << "   2^3 = " << powResult << " (ожидается 8.0)\n";
@@ -384,6 +395,9 @@ void AppCalculator::demoScientificFunctions() {
     } catch (const std::exception& e) {
         std::cout << "   Ошибка: " << e.what() << "\n";
     }
+    
+    // Восстанавливаем исходный режим
+    calc->setUseRadians(originalMode);
     
     std::cout << "\n=== Демонстрация завершена ===\n";
 }

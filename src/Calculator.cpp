@@ -17,14 +17,14 @@
 #include "utils/NumberConverter.hpp"
 #include <spdlog/spdlog.h>
 #include <stdexcept>
-#include <functional>
 
 // Инициализация статического указателя
 Calculator* Calculator::instance = nullptr;
 
-Calculator::Calculator() : currentResult(0.0) {
+Calculator::Calculator() : currentResult(0.0), useRadians(true) {
     initializeCommandRegistry();
-    spdlog::debug("Calculator instance created");
+    spdlog::debug("Calculator instance created. Angle mode: {}", 
+                  useRadians ? "radians" : "degrees");
 }
 
 Calculator::~Calculator() {
@@ -166,21 +166,21 @@ double Calculator::executeCommand(const std::string& commandName,
         if (operands.size() < 1) {
             throw std::invalid_argument("Sin command requires 1 operand");
         }
-        *sinCmd = SinCommand(operands[0], true); // по умолчанию радианы
+        *sinCmd = SinCommand(operands[0], useRadians); // Передаем настройку
         return executeCommand(sinCmd);
     }
     else if (auto cosCmd = std::dynamic_pointer_cast<CosCommand>(cmd)) {
         if (operands.size() < 1) {
             throw std::invalid_argument("Cos command requires 1 operand");
         }
-        *cosCmd = CosCommand(operands[0], true);
+        *cosCmd = CosCommand(operands[0], useRadians);
         return executeCommand(cosCmd);
     }
     else if (auto tanCmd = std::dynamic_pointer_cast<TanCommand>(cmd)) {
         if (operands.size() < 1) {
             throw std::invalid_argument("Tan command requires 1 operand");
         }
-        *tanCmd = TanCommand(operands[0], true);
+        *tanCmd = TanCommand(operands[0], useRadians);
         return executeCommand(tanCmd);
     }
     else if (auto powCmd = std::dynamic_pointer_cast<PowCommand>(cmd)) {
@@ -312,16 +312,4 @@ std::vector<std::string> Calculator::getAvailableCommands() const {
         commands.push_back(name);
     }
     return commands;
-}
-
-const std::vector<std::shared_ptr<Command>>& Calculator::getHistory() const {
-    return commandHistory;
-}
-
-double Calculator::getCurrentResult() const { 
-    return currentResult; 
-}
-
-void Calculator::setCurrentResult(double result) { 
-    currentResult = result; 
 }

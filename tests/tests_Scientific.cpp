@@ -107,3 +107,38 @@ TEST(ScientificTests, UndoRedoScientific) {
     EXPECT_TRUE(calc->redo());
     EXPECT_NEAR(calc->getCurrentResult(), 1.0, 1e-10); // Снова cos(0)
 }
+
+TEST(ScientificTests, CalculatorAngleMode) {
+    Calculator* calc = Calculator::getInstance();
+    
+    // Проверяем режим по умолчанию
+    EXPECT_TRUE(calc->getUseRadians());
+    
+    // Переключаем и проверяем
+    calc->setUseRadians(false);
+    EXPECT_FALSE(calc->getUseRadians());
+    EXPECT_EQ(calc->getAngleModeString(), "градусы");
+    
+    // Возвращаем обратно
+    calc->setUseRadians(true);
+    EXPECT_TRUE(calc->getUseRadians());
+    EXPECT_EQ(calc->getAngleModeString(), "радианы");
+}
+
+TEST(ScientificTests, CalculatorWithAngleMode) {
+    Calculator* calc = Calculator::getInstance();
+    calc->clearHistory();
+    
+    // Тест в радианах
+    calc->setUseRadians(true);
+    double sinResultRad = calc->executeCommand("sin", {M_PI/6});
+    EXPECT_NEAR(sinResultRad, 0.5, 1e-10);
+    
+    // Тест в градусах
+    calc->setUseRadians(false);
+    double sinResultDeg = calc->executeCommand("sin", {30.0});
+    EXPECT_NEAR(sinResultDeg, 0.5, 1e-10);
+    
+    // Проверяем, что режим сохраняется
+    EXPECT_FALSE(calc->getUseRadians());
+}
