@@ -1,34 +1,29 @@
-#ifndef ADD_COMMAND_HPP
-#define ADD_COMMAND_HPP
+#ifndef MULTIPLY_COMMAND_HPP
+#define MULTIPLY_COMMAND_HPP
 
 #include "../BinaryCommand.hpp"
 
-class AddCommand : public BinaryCommand {
+class MultiplyCommand : public BinaryCommand {
 private:
     double result;
-    double previousResult; // Для undo
+    double previousResult;
     
 public:
-    AddCommand(double left, double right)
-        : BinaryCommand("add", "Addition operation", left, right), 
+    MultiplyCommand(double left, double right)
+        : BinaryCommand("multiply", "Multiplication operation", left, right), 
           result(0.0), previousResult(0.0) {}
     
     double execute() override {
-        // Сохраняем предыдущее состояние
         if (getState()->hasState()) {
             previousResult = getState()->restore<double>();
         }
         
-        result = leftOperand + rightOperand;
-        
-        // Сохраняем текущий результат для возможного undo
+        result = leftOperand * rightOperand;
         getState()->save(result);
-        
         return result;
     }
     
     void undo() override {
-        // Для сложения undo возвращает предыдущий результат
         if (getState()->hasState()) {
             result = getState()->restore<double>();
         } else {
@@ -37,10 +32,10 @@ public:
     }
     
     std::string toString() const override {
-        return std::to_string(leftOperand) + " + " + 
+        return std::to_string(leftOperand) + " * " + 
                std::to_string(rightOperand) + " = " + 
                std::to_string(result);
     }
 };
 
-#endif // ADD_COMMAND_HPP
+#endif // MULTIPLY_COMMAND_HPP

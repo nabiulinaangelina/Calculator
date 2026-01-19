@@ -1,34 +1,34 @@
-#ifndef ADD_COMMAND_HPP
-#define ADD_COMMAND_HPP
+#ifndef DIVIDE_COMMAND_HPP
+#define DIVIDE_COMMAND_HPP
 
 #include "../BinaryCommand.hpp"
+#include <stdexcept>
 
-class AddCommand : public BinaryCommand {
+class DivideCommand : public BinaryCommand {
 private:
     double result;
-    double previousResult; // Для undo
+    double previousResult;
     
 public:
-    AddCommand(double left, double right)
-        : BinaryCommand("add", "Addition operation", left, right), 
+    DivideCommand(double left, double right)
+        : BinaryCommand("divide", "Division operation", left, right), 
           result(0.0), previousResult(0.0) {}
     
     double execute() override {
-        // Сохраняем предыдущее состояние
+        if (rightOperand == 0) {
+            throw std::invalid_argument("Division by zero");
+        }
+        
         if (getState()->hasState()) {
             previousResult = getState()->restore<double>();
         }
         
-        result = leftOperand + rightOperand;
-        
-        // Сохраняем текущий результат для возможного undo
+        result = leftOperand / rightOperand;
         getState()->save(result);
-        
         return result;
     }
     
     void undo() override {
-        // Для сложения undo возвращает предыдущий результат
         if (getState()->hasState()) {
             result = getState()->restore<double>();
         } else {
@@ -37,10 +37,10 @@ public:
     }
     
     std::string toString() const override {
-        return std::to_string(leftOperand) + " + " + 
+        return std::to_string(leftOperand) + " / " + 
                std::to_string(rightOperand) + " = " + 
                std::to_string(result);
     }
 };
 
-#endif // ADD_COMMAND_HPP
+#endif // DIVIDE_COMMAND_HPP

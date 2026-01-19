@@ -4,7 +4,6 @@
 
 #include <cmath>
 #include <stdexcept>
-#include <climits>
 
 #include "Standard.hpp"
 
@@ -45,4 +44,7 @@ TEST(StandardTests, EdgeCases) {
     // Деление с остатком
     EXPECT_EQ(divide(7, 2), 3); // целочисленное деление
     EXPECT_EQ(divide(-7, 2), -3);
+    
+    // Умножение больших чисел
+    EXPECT_EQ(multiply(1000, 1000), 1000000);
 }

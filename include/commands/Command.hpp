@@ -4,16 +4,18 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include "CommandState.hpp"
 
 // Базовый абстрактный класс Command
 class Command {
 protected:
     std::string name;
     std::string description;
+    std::unique_ptr<CommandState> state;
     
 public:
     Command(const std::string& n, const std::string& desc = "")
-        : name(n), description(desc) {}
+        : name(n), description(desc), state(std::make_unique<CommandState>()) {}
     
     virtual ~Command() = default;
     
@@ -26,6 +28,9 @@ public:
     
     // Фабричный метод для создания команд
     static std::shared_ptr<Command> createCommand(const std::string& commandName);
+    
+protected:
+    CommandState* getState() { return state.get(); }
 };
 
 #endif // COMMAND_HPP

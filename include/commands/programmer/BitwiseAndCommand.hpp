@@ -2,25 +2,43 @@
 #define BITWISE_AND_COMMAND_HPP
 
 #include "../BinaryCommand.hpp"
-#include <bitset> 
-#include <string>
+#include <bitset>
 
 class BitwiseAndCommand : public BinaryCommand {
 private:
     int result;
+    int previousLeft;
+    int previousRight;
     
 public:
     BitwiseAndCommand(int left, int right)
         : BinaryCommand("bit_and", "Bitwise AND operation", left, right), 
-          result(0) {}
+          result(0), previousLeft(left), previousRight(right) {}
     
     double execute() override {
+        // Сохраняем предыдущие значения
+        std::pair<int, int> prevState = {previousLeft, previousRight};
+        if (!getState()->hasState()) {
+            getState()->save(prevState);
+        }
+        
         result = static_cast<int>(leftOperand) & static_cast<int>(rightOperand);
+        
+        // Обновляем предыдущие значения
+        previousLeft = static_cast<int>(leftOperand);
+        previousRight = static_cast<int>(rightOperand);
+        
         return static_cast<double>(result);
     }
     
     void undo() override {
-        // Для bitwise AND undo не тривиально, нужно хранить предыдущее состояние
+        // Восстанавливаем предыдущие значения
+        if (getState()->hasState()) {
+            auto [prevLeft, prevRight] = getState()->restore<std::pair<int, int>>();
+            leftOperand = prevLeft;
+            rightOperand = prevRight;
+        }
+        result = static_cast<int>(leftOperand) & static_cast<int>(rightOperand);
     }
     
     std::string toString() const override {
@@ -34,7 +52,7 @@ public:
         int right = static_cast<int>(rightOperand);
         int res = result;
         
-        std::string binaryStr = "AND:  ";
+        std::string binaryStr = "AND:\n      ";
         binaryStr += std::bitset<32>(left).to_string() + "\n      " +
                      std::bitset<32>(right).to_string() + "\n      " +
                      std::string(32, '-') + "\n      " +

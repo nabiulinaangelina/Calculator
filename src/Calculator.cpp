@@ -1,5 +1,7 @@
 #include "Calculator.hpp"
 #include "commands/arithmetic/AddCommand.hpp"
+#include "commands/arithmetic/MultiplyCommand.hpp"
+#include "commands/arithmetic/DivideCommand.hpp"
 #include "commands/arithmetic/SubtractCommand.hpp"
 #include "commands/arithmetic/SqrtCommand.hpp"
 #include "commands/scientific/SinCommand.hpp"
@@ -46,6 +48,14 @@ void Calculator::initializeCommandRegistry() {
     
     commandRegistry["subtract"] = []() -> std::shared_ptr<Command> {
         return std::make_shared<SubtractCommand>(0, 0);
+    };
+
+    commandRegistry["multiply"] = []() -> std::shared_ptr<Command> {
+        return std::make_shared<MultiplyCommand>(0, 0);
+    };
+    
+    commandRegistry["divide"] = []() -> std::shared_ptr<Command> {
+        return std::make_shared<DivideCommand>(0, 0);
     };
     
     commandRegistry["sqrt"] = []() -> std::shared_ptr<Command> {
@@ -138,121 +148,133 @@ double Calculator::executeCommand(const std::string& commandName,
         throw std::invalid_argument("Unknown command: " + commandName);
     }
     
-    std::shared_ptr<Command> cmd = it->second();
+    // Создаем команду через фабричный метод
+    std::shared_ptr<Command> cmd;
     
-    // Устанавливаем операнды в зависимости от типа команды
-    if (auto addCmd = std::dynamic_pointer_cast<AddCommand>(cmd)) {
+    if (commandName == "add") {
         if (operands.size() < 2) {
             throw std::invalid_argument("Add command requires 2 operands");
         }
-        *addCmd = AddCommand(operands[0], operands[1]);
-        return executeCommand(addCmd);
+        cmd = std::make_shared<AddCommand>(operands[0], operands[1]);
     }
-    else if (auto subCmd = std::dynamic_pointer_cast<SubtractCommand>(cmd)) {
+    else if (commandName == "multiply") {
+        if (operands.size() < 2) {
+            throw std::invalid_argument("Multiply command requires 2 operands");
+        }
+        cmd = std::make_shared<MultiplyCommand>(operands[0], operands[1]);
+    }
+    else if (commandName == "divide") {
+        if (operands.size() < 2) {
+            throw std::invalid_argument("Divide command requires 2 operands");
+        }
+        cmd = std::make_shared<DivideCommand>(operands[0], operands[1]);
+    }
+    else if (commandName == "subtract") {
         if (operands.size() < 2) {
             throw std::invalid_argument("Subtract command requires 2 operands");
         }
-        *subCmd = SubtractCommand(operands[0], operands[1]);
-        return executeCommand(subCmd);
+        cmd = std::make_shared<SubtractCommand>(operands[0], operands[1]);
     }
-    else if (auto sqrtCmd = std::dynamic_pointer_cast<SqrtCommand>(cmd)) {
+    else if (commandName == "sqrt") {
         if (operands.size() < 1) {
             throw std::invalid_argument("Sqrt command requires 1 operand");
         }
-        *sqrtCmd = SqrtCommand(operands[0]);
-        return executeCommand(sqrtCmd);
+        cmd = std::make_shared<SqrtCommand>(operands[0]);
     }
-    else if (auto sinCmd = std::dynamic_pointer_cast<SinCommand>(cmd)) {
+    else if (commandName == "sin") {
         if (operands.size() < 1) {
             throw std::invalid_argument("Sin command requires 1 operand");
         }
-        *sinCmd = SinCommand(operands[0], useRadians); // Передаем настройку
-        return executeCommand(sinCmd);
+        cmd = std::make_shared<SinCommand>(operands[0], useRadians);
     }
-    else if (auto cosCmd = std::dynamic_pointer_cast<CosCommand>(cmd)) {
+    else if (commandName == "cos") {
         if (operands.size() < 1) {
             throw std::invalid_argument("Cos command requires 1 operand");
         }
-        *cosCmd = CosCommand(operands[0], useRadians);
-        return executeCommand(cosCmd);
+        cmd = std::make_shared<CosCommand>(operands[0], useRadians);
     }
-    else if (auto tanCmd = std::dynamic_pointer_cast<TanCommand>(cmd)) {
+    else if (commandName == "tan") {
         if (operands.size() < 1) {
             throw std::invalid_argument("Tan command requires 1 operand");
         }
-        *tanCmd = TanCommand(operands[0], useRadians);
-        return executeCommand(tanCmd);
+        cmd = std::make_shared<TanCommand>(operands[0], useRadians);
     }
-    else if (auto powCmd = std::dynamic_pointer_cast<PowCommand>(cmd)) {
+    else if (commandName == "pow") {
         if (operands.size() < 2) {
             throw std::invalid_argument("Pow command requires 2 operands");
         }
-        *powCmd = PowCommand(operands[0], operands[1]);
-        return executeCommand(powCmd);
+        cmd = std::make_shared<PowCommand>(operands[0], operands[1]);
     }
-    else if (auto logCmd = std::dynamic_pointer_cast<LogCommand>(cmd)) {
+    else if (commandName == "log") {
         if (operands.size() < 1) {
             throw std::invalid_argument("Log command requires 1 operand");
         }
-        *logCmd = LogCommand(operands[0]);
-        return executeCommand(logCmd);
+        cmd = std::make_shared<LogCommand>(operands[0]);
     }
-    else if (auto expCmd = std::dynamic_pointer_cast<ExpCommand>(cmd)) {
+    else if (commandName == "exp") {
         if (operands.size() < 1) {
             throw std::invalid_argument("Exp command requires 1 operand");
         }
-        *expCmd = ExpCommand(operands[0]);
-        return executeCommand(expCmd);
+        cmd = std::make_shared<ExpCommand>(operands[0]);
     }
-    else if (auto andCmd = std::dynamic_pointer_cast<BitwiseAndCommand>(cmd)) {
+    else if (commandName == "bit_and") {
         if (operands.size() < 2) {
             throw std::invalid_argument("Bitwise AND requires 2 operands");
         }
-        *andCmd = BitwiseAndCommand(static_cast<int>(operands[0]), 
-                                   static_cast<int>(operands[1]));
-        return executeCommand(andCmd);
+        cmd = std::make_shared<BitwiseAndCommand>(
+            static_cast<int>(operands[0]), 
+            static_cast<int>(operands[1])
+        );
     }
-    else if (auto orCmd = std::dynamic_pointer_cast<BitwiseOrCommand>(cmd)) {
+    else if (commandName == "bit_or") {
         if (operands.size() < 2) {
             throw std::invalid_argument("Bitwise OR requires 2 operands");
         }
-        *orCmd = BitwiseOrCommand(static_cast<int>(operands[0]), 
-                                 static_cast<int>(operands[1]));
-        return executeCommand(orCmd);
+        cmd = std::make_shared<BitwiseOrCommand>(
+            static_cast<int>(operands[0]), 
+            static_cast<int>(operands[1])
+        );
     }
-    else if (auto xorCmd = std::dynamic_pointer_cast<BitwiseXorCommand>(cmd)) {
+    else if (commandName == "bit_xor") {
         if (operands.size() < 2) {
             throw std::invalid_argument("Bitwise XOR requires 2 operands");
         }
-        *xorCmd = BitwiseXorCommand(static_cast<int>(operands[0]), 
-                                   static_cast<int>(operands[1]));
-        return executeCommand(xorCmd);
+        cmd = std::make_shared<BitwiseXorCommand>(
+            static_cast<int>(operands[0]), 
+            static_cast<int>(operands[1])
+        );
     }
-    else if (auto notCmd = std::dynamic_pointer_cast<BitwiseNotCommand>(cmd)) {
+    else if (commandName == "bit_not") {
         if (operands.size() < 1) {
             throw std::invalid_argument("Bitwise NOT requires 1 operand");
         }
-        *notCmd = BitwiseNotCommand(static_cast<int>(operands[0]));
-        return executeCommand(notCmd);
+        cmd = std::make_shared<BitwiseNotCommand>(
+            static_cast<int>(operands[0])
+        );
     }
-    else if (auto shiftLCmd = std::dynamic_pointer_cast<ShiftLeftCommand>(cmd)) {
+    else if (commandName == "shift_left") {
         if (operands.size() < 2) {
             throw std::invalid_argument("Shift left requires 2 operands");
         }
-        *shiftLCmd = ShiftLeftCommand(static_cast<int>(operands[0]), 
-                                     static_cast<int>(operands[1]));
-        return executeCommand(shiftLCmd);
+        cmd = std::make_shared<ShiftLeftCommand>(
+            static_cast<int>(operands[0]), 
+            static_cast<int>(operands[1])
+        );
     }
-    else if (auto shiftRCmd = std::dynamic_pointer_cast<ShiftRightCommand>(cmd)) {
+    else if (commandName == "shift_right") {
         if (operands.size() < 2) {
             throw std::invalid_argument("Shift right requires 2 operands");
         }
-        *shiftRCmd = ShiftRightCommand(static_cast<int>(operands[0]), 
-                                      static_cast<int>(operands[1]));
-        return executeCommand(shiftRCmd);
+        cmd = std::make_shared<ShiftRightCommand>(
+            static_cast<int>(operands[0]), 
+            static_cast<int>(operands[1])
+        );
+    }
+    else {
+        throw std::invalid_argument("Unsupported command: " + commandName);
     }
     
-    throw std::invalid_argument("Unsupported command type: " + commandName);
+    return executeCommand(cmd);
 }
 
 bool Calculator::undo() {

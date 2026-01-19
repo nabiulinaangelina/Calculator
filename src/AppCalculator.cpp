@@ -15,14 +15,19 @@
 #include "commands/programmer/ShiftRightCommand.hpp"
 #include <spdlog/spdlog.h>
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <iomanip>
 #include <sstream>
+#include <algorithm>
+#include <map>
 
 // инициализация статического указателя
 AppCalculator *AppCalculator::instance = nullptr;
+
 // приватный ctor
 AppCalculator::AppCalculator(){}
+
 AppCalculator::~AppCalculator()
 {
     spdlog::trace("AppCalculator destructor called.");
@@ -31,6 +36,7 @@ AppCalculator::~AppCalculator()
         delete instance;
     }
 }
+
 // метод доступа к единственному объекту
 AppCalculator *AppCalculator::getInstance()
 {
@@ -41,19 +47,24 @@ AppCalculator *AppCalculator::getInstance()
     }
     return instance;
 }
+
 // Демо-функции для тестирования
 void AppCalculator::demoBasicArithmetic() {
     std::cout << "\n=== Демонстрация базовых операций ===\n\n";
+    
     int a = 10, b = 5;
+    
     std::cout << "a = " << a << ", b = " << b << "\n";
     std::cout << "a + b = " << add(a, b) << "\n";
     std::cout << "a - b = " << substract(a, b) << "\n";
     std::cout << "a * b = " << multiply(a, b) << "\n";
+    
     try {
         std::cout << "a / b = " << divide(a, b) << "\n";
     } catch (const std::exception& e) {
         std::cout << "Ошибка: " << e.what() << "\n";
     }
+    
     // Тест деления на 0
     std::cout << "\nТест деления на 0:\n";
     try {
@@ -62,10 +73,12 @@ void AppCalculator::demoBasicArithmetic() {
         std::cout << "Поймано исключение: " << e.what() << "\n";
     }
 }
+
 void AppCalculator::demoStandardOperations() {
     std::cout << "\n=== Режим стандартного калькулятора ===\n\n";
     std::cout << "Эта функциональность будет реализована позже.\n";
     std::cout << "Сейчас доступна только демонстрация базовых операций.\n";
+    
     demoBasicArithmetic();
 }
 
@@ -154,6 +167,36 @@ void AppCalculator::showStandardCalculator() {
         try {
             double result = calc->executeCommand("subtract", {num1, num2});
             std::cout << num1 << " - " << num2 << " = " << result << "\n";
+        } catch (const std::exception& e) {
+            std::cout << "Ошибка: " << e.what() << "\n";
+        }
+    });
+
+    calcMenu.addItem("Умножение", [&calc, &num1, &num2]() {
+        std::cout << "\nВведите два числа:\n";
+        std::cout << "Первое число: ";
+        std::cin >> num1;
+        std::cout << "Второе число: ";
+        std::cin >> num2;
+        
+        try {
+            double result = calc->executeCommand("multiply", {num1, num2});
+            std::cout << num1 << " * " << num2 << " = " << result << "\n";
+        } catch (const std::exception& e) {
+            std::cout << "Ошибка: " << e.what() << "\n";
+        }
+    });
+    
+    calcMenu.addItem("Деление", [&calc, &num1, &num2]() {
+        std::cout << "\nВведите два числа:\n";
+        std::cout << "Первое число: ";
+        std::cin >> num1;
+        std::cout << "Второе число: ";
+        std::cin >> num2;
+        
+        try {
+            double result = calc->executeCommand("divide", {num1, num2});
+            std::cout << num1 << " / " << num2 << " = " << result << "\n";
         } catch (const std::exception& e) {
             std::cout << "Ошибка: " << e.what() << "\n";
         }
@@ -738,27 +781,271 @@ void AppCalculator::showSortingOperations() {
     std::cout << "\n=== Сортировки массивов ===\n\n";
     std::cout << "Эта функциональность будет реализована на 9 этапе.\n";
 }
-void AppCalculator::showHistory() { 
-    std::cout << "\n=== История операций ===\n\n";
-    std::cout << "Эта функциональность будет реализована на 10 этапе.\n";
+void AppCalculator::showHistory() {
+    Menu historyMenu("История операций");
+    
+    Calculator* calc = Calculator::getInstance();
+    
+    historyMenu.addItem("Показать историю", [calc]() {
+        auto history = calc->getHistory();
+        if (history.empty()) {
+            std::cout << "\nИстория операций пуста.\n";
+        } else {
+            std::cout << "\n=== История операций ===\n\n";
+            for (size_t i = 0; i < history.size(); ++i) {
+                std::cout << i + 1 << ". " << history[i]->toString() << "\n";
+            }
+            
+            // Статистика
+            std::cout << "\nСтатистика:\n";
+            std::cout << "  Всего операций: " << history.size() << "\n";
+            
+            // Подсчет по типам операций
+            std::map<std::string, int> operationCount;
+            for (const auto& cmd : history) {
+                operationCount[cmd->getName()]++;
+            }
+            
+            std::cout << "  По типам операций:\n";
+            for (const auto& [op, count] : operationCount) {
+                std::cout << "    " << op << ": " << count << "\n";
+            }
+        }
+    });
+    
+    historyMenu.addItem("Очистить историю", [calc]() {
+        calc->clearHistory();
+        std::cout << "\nИстория операций очищена.\n";
+    });
+    
+    historyMenu.addItem("Отменить последнюю операцию (Undo)", [calc]() {
+        if (calc->undo()) {
+            std::cout << "\nОперация отменена.\n";
+            std::cout << "Текущий результат: " << calc->getCurrentResult() << "\n";
+        } else {
+            std::cout << "\nНечего отменять.\n";
+        }
+    });
+    
+    historyMenu.addItem("Повторить отмененную операцию (Redo)", [calc]() {
+        if (calc->redo()) {
+            std::cout << "\nОперация повторена.\n";
+            std::cout << "Текущий результат: " << calc->getCurrentResult() << "\n";
+        } else {
+            std::cout << "\nНечего повторять.\n";
+        }
+    });
+    
+    historyMenu.addItem("Экспорт истории в файл", [calc]() {
+        std::cout << "\nВведите имя файла для экспорта: ";
+        std::string filename;
+        std::cin >> filename;
+        
+        auto history = calc->getHistory();
+        if (history.empty()) {
+            std::cout << "История пуста, экспорт отменен.\n";
+            return;
+        }
+        
+        std::ofstream file(filename);
+        if (!file.is_open()) {
+            std::cout << "Ошибка открытия файла.\n";
+            return;
+        }
+        
+        file << "История операций калькулятора\n";
+        file << "==============================\n\n";
+        
+        for (size_t i = 0; i < history.size(); ++i) {
+            file << i + 1 << ". " << history[i]->toString() << "\n";
+        }
+        
+        file.close();
+        std::cout << "История экспортирована в файл: " << filename << "\n";
+    });
+    
+    historyMenu.addItem("Импорт истории из файла", []() {
+        std::cout << "\nВведите имя файла для импорта: ";
+        std::string filename;
+        std::cin >> filename;
+        
+        std::ifstream file(filename);
+        if (!file.is_open()) {
+            std::cout << "Ошибка открытия файла.\n";
+            return;
+        }
+        
+        std::string line;
+        std::cout << "\nСодержимое файла:\n";
+        std::cout << "==================\n";
+        while (std::getline(file, line)) {
+            std::cout << line << "\n";
+        }
+        file.close();
+        
+        std::cout << "\nПримечание: Импорт истории операций в текущей версии\n";
+        std::cout << "только отображает содержимое файла. Для полного импорта\n";
+        std::cout << "необходима реализация парсера команд.\n";
+    });
+    
+    historyMenu.addItem("Поиск в истории", [calc]() {
+        std::cout << "\nВведите текст для поиска: ";
+        std::string searchText;
+        std::cin.ignore();
+        std::getline(std::cin, searchText);
+        
+        auto history = calc->getHistory();
+        std::vector<std::shared_ptr<Command>> searchResults;
+        
+        for (const auto& cmd : history) {
+            std::string cmdStr = cmd->toString();
+            if (cmdStr.find(searchText) != std::string::npos ||
+                cmd->getName().find(searchText) != std::string::npos) {
+                searchResults.push_back(cmd);
+            }
+        }
+        
+        if (searchResults.empty()) {
+            std::cout << "\nПо запросу '" << searchText << "' ничего не найдено.\n";
+        } else {
+            std::cout << "\nНайдено " << searchResults.size() << " операций:\n\n";
+            for (size_t i = 0; i < searchResults.size(); ++i) {
+                std::cout << i + 1 << ". " << searchResults[i]->toString() << "\n";
+            }
+        }
+    });
+    
+    historyMenu.addItem("Статистика операций", [calc]() {
+        auto history = calc->getHistory();
+        if (history.empty()) {
+            std::cout << "\nИстория операций пуста.\n";
+            return;
+        }
+        
+        std::map<std::string, int> operationStats;
+        double totalSum = 0.0;
+        int totalOperations = history.size();
+        
+        for (const auto& cmd : history) {
+            operationStats[cmd->getName()]++;
+            
+            // Пытаемся получить числовой результат из строки
+            std::string cmdStr = cmd->toString();
+            size_t equalsPos = cmdStr.find('=');
+            if (equalsPos != std::string::npos) {
+                try {
+                    std::string resultStr = cmdStr.substr(equalsPos + 2);
+                    double result = std::stod(resultStr);
+                    totalSum += result;
+                } catch (...) {
+                    // Игнорируем ошибки парсинга
+                }
+            }
+        }
+        
+        std::cout << "\n=== Статистика операций ===\n\n";
+        std::cout << "Общая статистика:\n";
+        std::cout << "  Всего операций: " << totalOperations << "\n";
+        std::cout << "  Сумма результатов: " << totalSum << "\n";
+        
+        if (totalOperations > 0) {
+            std::cout << "  Средний результат: " << (totalSum / totalOperations) << "\n";
+        }
+        
+        std::cout << "\nРаспределение по типам операций:\n";
+        for (const auto& [op, count] : operationStats) {
+            double percentage = (static_cast<double>(count) / totalOperations) * 100.0;
+            std::cout << "  " << std::setw(15) << std::left << op 
+                      << ": " << std::setw(4) << count 
+                      << " (" << std::fixed << std::setprecision(1) << percentage << "%)\n";
+        }
+        
+        // Наиболее часто используемая операция
+        auto mostCommon = std::max_element(
+            operationStats.begin(), operationStats.end(),
+            [](const auto& a, const auto& b) { return a.second < b.second; }
+        );
+        
+        if (mostCommon != operationStats.end()) {
+            std::cout << "\nНаиболее частая операция: " << mostCommon->first 
+                      << " (" << mostCommon->second << " раз)\n";
+        }
+    });
+    
+    historyMenu.addItem("Демо работы с историей", [this]() {
+        this->demoHistoryOperations();
+    });
+    
+    historyMenu.run();
 }
+
+// Добавляем демо-функцию для истории
+void AppCalculator::demoHistoryOperations() {
+    std::cout << "\n=== Демонстрация работы с историей ===\n\n";
+    
+    Calculator* calc = Calculator::getInstance();
+    calc->clearHistory();
+    
+    std::cout << "1. Выполняем несколько операций:\n";
+    
+    // Выполняем операции
+    double r1 = calc->executeCommand("add", {10, 5});
+    std::cout << "   - 10 + 5 = " << r1 << "\n";
+    
+    double r2 = calc->executeCommand("subtract", {r1, 3});
+    std::cout << "   - " << r1 << " - 3 = " << r2 << "\n";
+    
+    double r3 = calc->executeCommand("multiply", {r2, 2});
+    std::cout << "   - " << r2 << " * 2 = " << r3 << "\n";
+    
+    double r4 = calc->executeCommand("sin", {30.0}); // В градусах
+    std::cout << "   - sin(30°) = " << r4 << "\n";
+    
+    std::cout << "\n2. Показываем историю:\n";
+    auto history = calc->getHistory();
+    for (size_t i = 0; i < history.size(); ++i) {
+        std::cout << "   " << i + 1 << ". " << history[i]->toString() << "\n";
+    }
+    
+    std::cout << "\n3. Тестируем Undo:\n";
+    calc->undo();
+    std::cout << "   - Отменена последняя операция\n";
+    std::cout << "   - Текущий результат: " << calc->getCurrentResult() << "\n";
+    
+    std::cout << "\n4. Тестируем Redo:\n";
+    calc->redo();
+    std::cout << "   - Повторена отмененная операция\n";
+    std::cout << "   - Текущий результат: " << calc->getCurrentResult() << "\n";
+    
+    std::cout << "\n5. Очищаем историю:\n";
+    calc->clearHistory();
+    std::cout << "   - История очищена. Всего операций: " 
+              << calc->getHistory().size() << "\n";
+    
+    std::cout << "\n=== Демонстрация завершена ===\n";
+}
+
 // метод run — принимает аргументы командной строки
 void AppCalculator::run(int argc, char *argv[])
 {
     // Настройка spdlog
     spdlog::set_level(spdlog::level::trace); // уровень логирования приложения
     spdlog::info("Запуск калькулятора...");
+
     // обработка аргументов командной строки
     spdlog::trace("AppCalculator run() called with {} arguments.", argc);
+    
     spdlog::debug("AppCalculator is running with {} arguments.", argc);
     for (int i = 0; i < argc; ++i)
     {
         spdlog::debug("Argument {}: {}", i, argv[i]);
     }
+
     // Проверка аргументов командной строки
     bool directMode = false;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
+        
         if (arg == "--demo" || arg == "-d") {
             spdlog::info("Запуск в демо-режиме...");
             demoBasicArithmetic();
@@ -780,31 +1067,43 @@ void AppCalculator::run(int argc, char *argv[])
             break;
         }
     }
+
     // Если не прямой режим - показываем меню
     if (!directMode) {
         // Создаем главное меню
         Menu mainMenu("Главное меню");
-         // Добавляем пункты согласно требованиям
+        
+        // Добавляем пункты согласно требованиям
         mainMenu.addItem("Стандартный калькулятор", 
             [this]() { this->showStandardCalculator(); });
+        
         mainMenu.addItem("Инженерный калькулятор", 
             [this]() { this->showScientificCalculator(); });
+        
         mainMenu.addItem("Калькулятор программиста", 
             [this]() { this->showProgrammerCalculator(); });
-        mainMenu.addItem("Вычисление выражений", 
-            [this]() { this->showExpressionEvaluation(); });
-        mainMenu.addItem("Работа с числами", 
-            [this]() { this->showNumberOperations(); });
-        mainMenu.addItem("Работа со строками", 
-            [this]() { this->showStringOperations(); });
-        mainMenu.addItem("Работа с датами", 
-            [this]() { this->showDateOperations(); });
-        mainMenu.addItem("Сортировки массивов", 
-            [this]() { this->showSortingOperations(); });
+        
+        // mainMenu.addItem("Вычисление выражений", 
+        //     [this]() { this->showExpressionEvaluation(); });
+        
+        // mainMenu.addItem("Работа с числами", 
+        //     [this]() { this->showNumberOperations(); });
+        
+        // mainMenu.addItem("Работа со строками", 
+        //     [this]() { this->showStringOperations(); });
+        
+        // mainMenu.addItem("Работа с датами", 
+        //     [this]() { this->showDateOperations(); });
+        
+        // mainMenu.addItem("Сортировки массивов", 
+        //     [this]() { this->showSortingOperations(); });
+        
         mainMenu.addItem("История операций", 
             [this]() { this->showHistory(); });
+        
         // Запускаем меню
         mainMenu.run();
     }
+
     spdlog::info("Завершение работы калькулятора...");
 }
