@@ -4,12 +4,12 @@
 #include <cstdlib>
 
 #ifdef _WIN32
-#define CLEAR_COMMAND "cls"
+    #define CLEAR_COMMAND "cls"
 #else
-#define CLEAR_COMMAND "clear"
+    #define CLEAR_COMMAND "clear"
 #endif
 
-Menu::Menu(const std::string& menuTitle)
+Menu::Menu(const std::string& menuTitle) 
     : title(menuTitle), isRunning(false) {}
 
 void Menu::addItem(const std::string& title, std::function<void()> action) {
@@ -23,22 +23,24 @@ void Menu::clearScreen() {
 
 void Menu::run() {
     isRunning = true;
-
+    
     while (isRunning) {
         clearScreen();
-        std::cout << "\n===" << title << " ==\n\n";
-
+        std::cout << "\n=== " << title << " ===\n\n";
+        
         // Вывод пунктов меню
-        for (size_i i = 0; i < items.size(); ++i) {
+        for (size_t i = 0; i < items.size(); ++i) {
             std::cout << i + 1 << ". " << items[i].title << "\n";
         }
+        
         if (title == "Главное меню") {
             std::cout << "0. Выход\n";
         } else {
             std::cout << "0. Назад\n";
         }
+        
         std::cout << "\nВыберите пункт: ";
-
+        
         // Обработка ввода
         int choice;
         if (!(std::cin >> choice)) {
@@ -47,23 +49,24 @@ void Menu::run() {
             std::cout << "Ошибка: введите число!\n";
             continue;
         }
+        
         if (choice == 0) {
             stop();
             break;
         }
-
+        
         if (choice < 1 || choice > static_cast<int>(items.size())) {
             std::cout << "Неверный выбор. Попробуйте снова.\n";
             std::cout << "Нажмите Enter для продолжения...";
             std::cin.ignore();
             std::cin.get();
-        continue;
+            continue;
         }
-
+        
         // Выполнение выбранного действия
         clearScreen();
         items[choice - 1].action();
-
+        
         if (isRunning && title != "Главное меню") {
             std::cout << "\nНажмите Enter для возврата в меню...";
             std::cin.ignore();
